@@ -105,34 +105,440 @@
                 </div>
             </div>
         </section>
-        <!-- Portfolio Modal-->
-        <div class="portfolio-modal modal fade" id="portfolioModal0" tabindex="-1" role="dialog" aria-labelledby="#portfolioModal0Label" aria-hidden="true">
-            <div class="modal-dialog modal-xl" role="document">
-                <div class="modal-content">
-                    <button class="close" type="button" data-dismiss="modal" aria-label="Close"><span aria-hidden="true"><i class="fas fa-times"></i></span></button>
-                    <div class="modal-body text-center">
-                        <div class="container">
-                            <div class="row justify-content-center">
-                                <div class="col-lg-8">
-                                    <!-- Portfolio Modal - Title-->
-                                    <h2 class="portfolio-modal-title text-secondary mb-0">Lab 1</h2>
-                                    <!-- Icon Divider-->
-                                    <div class="divider-custom">
-                                        <div class="divider-custom-line"></div>
-                                        <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
-                                        <div class="divider-custom-line"></div>
-                                    </div>
-                                    <!-- Portfolio Modal - Image--><img class="img-fluid rounded mb-5" src="assets/img/portfolio/cabin.png" alt="Log Cabin"/>
-                                    <!-- Portfolio Modal - Text-->
-                                    <p class="mb-5">Lorem ipsum dolor sit amet, consectetur adipisicing elit.Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam.</p>
-                                    <button class="btn btn-primary" href="#" data-dismiss="modal"><i class="fas fa-times fa-fw"></i>Close Window</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+        <!-- Portfolio Modal (Lab 1)-->
+<div class="portfolio-modal modal fade" id="portfolioModal0" tabindex="-1" role="dialog" aria-labelledby="#portfolioModal0Label" aria-hidden="true">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true"><i class="fas fa-times"></i></span>
+      </button>
+
+      <div class="modal-body text-center">
+        <div class="container">
+          <div class="row justify-content-center">
+            <div class="col-lg-10">
+
+              <!-- Title -->
+              <h2 class="portfolio-modal-title text-secondary mb-0">Lab 1: The Artemis Board and Bluetooth</h2>
+
+              <!-- Divider -->
+              <div class="divider-custom">
+                <div class="divider-custom-line"></div>
+                <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+                <div class="divider-custom-line"></div>
+              </div>
+
+              <!-- Optional header image -->
+              <!-- TODO: Replace with a real Lab 1 photo if you want -->
+              <img class="img-fluid rounded mb-4" src="assets/img/portfolio/cabin.png" alt="Lab 1 Overview"/>
+
+              <div class="text-left">
+
+                <!-- ===================== -->
+                <!-- Overview / Parts -->
+                <!-- ===================== -->
+                <h3 class="text-secondary">Overview</h3>
+                <p>
+                  Lab 1 was split into two parts. <strong>Lab 1A</strong> focused on getting comfortable with the Artemis board
+                  and the Arduino IDE (uploads, LED, serial, temperature sensor, and microphone). <strong>Lab 1B</strong> focused
+                  on building a BLE pipeline between a Jupyter notebook (Python) and the Artemis (Arduino), so I could send
+                  commands wirelessly and receive timestamped sensor/debug output.
+                </p>
+
+                <h4 class="text-secondary mt-4">Parts Required</h4>
+                <ul>
+                  <li>1× SparkFun RedBoard Artemis Nano</li>
+                  <li>1× USB cable</li>
+                </ul>
+
+                <!-- ===================== -->
+                <!-- LAB 1A -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h2 class="text-secondary">Lab 1A: Arduino IDE + Artemis Basics</h2>
+
+                <h4 class="text-secondary mt-3">Prelab</h4>
+                <p>
+                  I installed the Arduino IDE and the SparkFun Apollo3 board support package (via the additional boards manager JSON).
+                  After selecting the <strong>RedBoard Artemis Nano</strong> board definition, I attempted to upload a simple sketch.
+                  My first issue was that the <strong>bootloader would not connect</strong>, so the board initially failed to burn/upload.
+                  After reseating the USB cable/connector and retrying the upload (and confirming the correct port), the board eventually
+                  uploaded successfully and I continued with the examples.
+                </p>
+                <p class="mb-2">
+                  <strong>Note:</strong> The Artemis is a <strong>3V logic</strong> board, so inputs should be kept at 3V-level signals.
+                </p>
+
+                <!-- ===== Lab 1A Instructions ===== -->
+                <h3 class="text-secondary mt-4">Lab 1A Instructions + Results</h3>
+
+                <!-- Lab 1A - Instruction 1 -->
+                <h5 class="mt-3"><strong>1) Select Board + Port, confirm connection</strong></h5>
+                <p>
+                  I connected the Artemis to my laptop and selected the correct board (<em>RedBoard Artemis Nano</em>) and the correct serial port.
+                  The main problem I ran into here was the upload failing because the bootloader did not connect at first. Once the port and physical
+                  connection were stable, uploads consistently worked.
+                </p>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab1/lab1a_1a.png" alt="Lab 1A Instruction 1 screenshot a">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab1/lab1a_1b.png" alt="Lab 1A Instruction 1 screenshot b">
+                  </div>
                 </div>
+
+                <!-- Lab 1A - Instruction 2 -->
+                <h5 class="mt-3"><strong>2) Run Blink</strong></h5>
+                <p>
+                  I uploaded the Blink example and verified the onboard LED toggled at the expected rate. This confirmed that the board could compile
+                  and accept uploads reliably after fixing the bootloader/connection issue.
+                </p>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <iframe width="560" height="315" src="https://www.youtube.com/embed/qhTZCN3-h_Q?si=WHW77Kt1elR7H49z" title="Lab 1a 2" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>                   
+                  </div>
+                </div>
+
+                <!-- Lab 1A - Instruction 3 -->
+                <h5 class="mt-3"><strong>3) Run Example4_Serial</strong></h5>
+                <p>
+                  I ran the Apollo3 serial example and used the Serial Monitor to send input to the board and read back output. This verified that
+                  USB serial communication worked, and it also helped me confirm the correct baud rate settings when output looked incorrect.
+                </p>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <iframe width="560" height="315" src="https://www.youtube.com/embed/2MjDBrmHFx4?si=9E3nh4Ds6XZEe3Jo" title="Lab 1a 3" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                  </div>
+                </div>
+
+                <!-- Lab 1A - Instruction 4 -->
+                <h5 class="mt-3"><strong>4) Run Example2_analogRead (Temperature sensor)</strong></h5>
+                <p>
+                  I ran the temperature sensor example and observed the readings changing when I warmed the chip (touching or blowing on it).
+                  The change was not instant, which makes sense because the chip temperature takes time to rise and settle.
+                </p>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <iframe width="560" height="315" src="https://www.youtube.com/embed/kSq3y6xCDCs?si=bnlzLfjVaAxasRUb" title="Lab 1a 4" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                  </div>
+                </div>
+
+                <!-- Lab 1A - Instruction 5 -->
+                <h5 class="mt-3"><strong>5) Run Example1_MicrophoneOutput (PDM microphone)</strong></h5>
+                <p>
+                  I ran the PDM microphone output example and verified that the measured output changed when I spoke or whistled near the board.
+                  This confirmed that the onboard microphone pipeline was functional.
+                </p>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <iframe width="560" height="315" src="https://www.youtube.com/embed/ZQkD2p6ryp8?si=FD7A58IybRP0CdAa" title="Lab 1a 5" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                  </div>
+                </div>
+
+                <!-- Lab 1A - Instruction 6 (5000-level) -->
+                <h5 class="mt-3"><strong>6) (5000-level) Simplified electronic tuner</strong></h5>
+                <p>
+                  For the additional task, I combined microphone input with serial output so the program could detect a few target frequency bands
+                  and print the corresponding note name over serial. The key idea was to estimate a dominant frequency from the microphone samples
+                  and then map that frequency to one of three note labels (within a tolerance).
+                </p>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <iframe width="560" height="315" src="https://www.youtube.com/embed/INOdJrfF1hc?si=m_jJu0f1UBa6BhII" title="Lab 1a tuner" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+                  </div>
+                </div>
+
+                <!-- ===================== -->
+                <!-- LAB 1B -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h2 class="text-secondary">Lab 1B: BLE + Jupyter Notebook Workflow</h2>
+
+                <h4 class="text-secondary mt-3">Prelab (Brief)</h4>
+                <p>
+                  I set up a Python environment for the BLE codebase and used JupyterLab to run commands from my laptop to the Artemis.
+                  On the board side, I installed the ArduinoBLE library and flashed the provided BLE sketch so the Artemis could advertise a BLE service
+                  and exchange command/data strings with my laptop.
+                </p>
+
+                <h3 class="text-secondary mt-4">Configurations</h3>
+
+                <!-- Lab 1B - Instruction 1 -->
+                <h5 class="mt-3"><strong>1) Update Artemis MAC address in connections.yaml</strong></h5>
+                <p>
+                  After flashing the BLE sketch, the board printed its MAC address over serial. I copied that MAC address into
+                  <code>connections.yaml</code> so the Python notebook connected to the correct device instead of scanning randomly.
+                </p>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab1/lab1b_prelab_1a.png" alt="Lab 1B Prelab Instruction 1 screenshot a">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab1/lab1b_prelab_1b.png" alt="Lab 1B Prelab Instruction 1 screenshot b">
+                  </div>
+                </div>
+
+                <!-- Lab 1B - Instruction 2 -->
+                <h5 class="mt-3"><strong>2) Change BLE Service UUID (Arduino + YAML)</strong></h5>
+                <p>
+                  I generated a fresh UUID in a Jupyter cell and updated both the Arduino BLE service UUID and the Python config UUID
+                  to avoid accidentally connecting to a classmate’s board. This ensured my laptop only recognized my service.
+                </p>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab1/lab1b_prelab_2a.png" alt="Lab 1B Prelab Instruction 2 screenshot a">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab1/lab1b_prelab_2b.png" alt="Lab 1B Prelab Instruction 2 screenshot b">
+                  </div>
+                </div>
+
+                <!-- Lab 1B - Instruction 3 -->
+                <h5 class="mt-3"><strong>3) Verify Arduino UUIDs match connections.yaml</strong></h5>
+                <p>
+                  I checked that the characteristic UUIDs used in the Arduino sketch were consistent with the UUIDs referenced on the Python side
+                  so the notebook could write commands and subscribe to notifications correctly.
+                </p>
+
+                <!-- Lab 1B - Instruction 4 -->
+                <h5 class="mt-3"><strong>4) Match command type definitions (Arduino enum vs Python cmd_types)</strong></h5>
+                <p>
+                  The notebook sends commands using an integer command ID. I confirmed that the command IDs in Python matched the Arduino enum,
+                  so each command executed the intended case in the Arduino <code>handle_command()</code> switch statement.
+                </p>
+
+                <!-- Lab 1B - Instruction 5 -->
+                <h5 class="mt-3"><strong>5) Re-upload ble_arduino.ino and run demo.ipynb setup cells</strong></h5>
+                <p>
+                  After making changes to UUIDs/commands, I reflashed the Arduino sketch and then ran through the demo notebook cells in order.
+                  This confirmed the board could connect, accept command strings, and send responses back to the laptop.
+                </p>
+
+                <h3 class="text-secondary mt-4">Tasks (wireless debugging + timestamped data)</h3>
+
+                <!-- Lab 1B - Instruction 6 -->
+                <h5 class="mt-3"><strong>1) ECHO: Send a string and receive an augmented reply</strong></h5>
+                <p>
+                  I sent a string payload from Python using the ECHO command. On the Artemis side, the command handler extracted the string from the
+                  robot command buffer and wrote back a response string through the TX string characteristic. On the laptop side, I read the reply and
+                  confirmed the response contained the original text with an added prefix.
+                </p>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab1/lab1b_1a.png" alt="Lab 1B Instruction 1 screenshot a">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab1/lab1b_1b.png" alt="Lab 1B Instruction 1 screenshot b">
+                  </div>
+                </div>
+
+                <!-- Lab 1B - Instruction 7 (EXAMPLE requested) -->
+                <h5 class="mt-3"><strong>2) SEND_THREE_FLOATS: Send three floats and extract them on Artemis</strong></h5>
+                <p>
+                  For <code>SEND_THREE_FLOATS</code>, I formatted the command in Python by packing three numeric values into the command string using the
+                  delimiter format expected by the codebase (values separated by <code>|</code>). After sending the command over BLE, the Artemis received the
+                  string and <code>handle_command()</code> parsed the next three values as floats. I printed the parsed floats over serial to verify they matched
+                  the values sent from the laptop. This confirmed that multi-value payloads could be transmitted reliably and decoded with the correct types.
+                </p>
+
+                <!-- Placeholders for your evidence (2 screenshots or a video) -->
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab1/lab1b_2a.png" alt="Lab 1B Instruction 2 screenshot a">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab1/lab1b_2b.png" alt="Lab 1B Instruction 2 screenshot b">
+                  </div>
+                </div>
+
+                <!-- Lab 1B - Instruction 8 -->
+                <h5 class="mt-3"><strong>3) GET_TIME_MILLIS: Return a timestamp string from the robot</strong></h5>
+                <p>
+                  I added/used a <code>GET_TIME_MILLIS</code> command so the Artemis could respond with its current millisecond timer.
+                  The robot wrote the time value into a string message and sent it back via the TX string characteristic.
+                </p>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab1/lab1b_3a.png" alt="Lab 1B Instruction 3 screenshot a">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab1/lab1b_3b.png" alt="Lab 1B Instruction 3 screenshot b">
+                  </div>
+                </div>
+
+                <!-- Lab 1B - Instruction 9 -->
+                <h5 class="mt-3"><strong>4) Notification handler: Parse time from incoming strings</strong></h5>
+                <p>
+                  I set up a Python notification handler subscribed to the RX/TX string characteristic. Each time the Artemis published a string,
+                  the callback ran and parsed out the timestamp portion, then appended it to a list for later analysis.
+                </p>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab1/lab1b_4a.png" alt="Lab 1B Instruction 4 screenshot a">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab1/lab1b_4b.png" alt="Lab 1B Instruction 4 screenshot b">
+                  </div>
+                </div>
+
+                <!-- Lab 1B - Instruction 10 -->
+                <h5 class="mt-3"><strong>5) Streaming timestamps: Measure effective data transfer rate</strong></h5>
+                <p>
+                  I ran a loop that repeatedly requested/sent timestamps for a few seconds. On the laptop, the notification handler recorded arrival times
+                  and parsed timestamps. I computed the effective message rate as:
+                  <code>(number of received messages) / (total collection time)</code>.
+                </p>
+                <p>
+                  <strong>Effective transfer rate:</strong> I estimated the data rate by multiplying the message rate by the approximate payload size per message.
+                  Since BLE has overhead and string formatting adds extra characters, the true throughput was lower than “ideal” raw bytes.
+                  <br>
+                  <strong>Result:</strong> <em>239 messages</em> → <em> Data Transfer Rate: 47.80 (approx.)</em>
+                </p>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab1/lab1b_5a.png" alt="Lab 1B Instruction 5 screenshot a">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab1/lab1b_5b.png" alt="Lab 1B Instruction 5 screenshot b">
+                  </div>
+                </div>
+
+                <!-- Lab 1B - Instruction 11 -->
+                <h5 class="mt-3"><strong>6) Buffered timestamps: Store locally, then SEND_TIME_DATA</strong></h5>
+                <p>
+                  Instead of transmitting each sample immediately, I stored timestamps in a fixed-size array on the Artemis. Once the array was filled
+                  (or a stopping condition was met), I used a <code>SEND_TIME_DATA</code> command to loop over the stored values and transmit them as a batch.
+                  On the Python side, I appended received entries into a list and checked that the counts matched.
+                </p>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab1/lab1b_6a.png" alt="Lab 1B Instruction 6 screenshot a">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab1/lab1b_6b.png" alt="Lab 1B Instruction 6 screenshot b">
+                  </div>
+                </div>
+
+                <!-- Lab 1B - Instruction 12 -->
+                <h5 class="mt-3"><strong>7) Timestamp + temperature arrays: GET_TEMP_READINGS</strong></h5>
+                <p>
+                  I created a second array the same length as the timestamp array to store temperature readings so each index corresponded to the same sample time.
+                  When I ran <code>GET_TEMP_READINGS</code>, the Artemis looped through both arrays and sent paired entries (timestamp + temperature).
+                  The Python notification handler parsed each message and populated two lists.
+                </p>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab1/lab1b_7a.png" alt="Lab 1B Instruction 7 screenshot a">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab1/lab1b_7b.png" alt="Lab 1B Instruction 7 screenshot b">
+                  </div>
+                </div>
+
+                <!-- Lab 1B - Instruction 13 -->
+                <h5 class="mt-3"><strong>8) Discussion question: compare methods + memory estimate</strong></h5>
+                <p>
+                  <strong>Streaming method:</strong> easier for live debugging because data shows up immediately, but frequent notifications can bottleneck due to BLE overhead
+                  and Python-side processing.<br>
+                  <strong>Buffered method:</strong> supports faster sampling on the robot (because sampling is local), but requires careful memory management and an extra “dump data”
+                  step to transmit the stored values.
+                </p>
+                <p>
+                  <strong>How quickly can buffered sampling run?</strong> It is mainly limited by the sensor read + array write on the Artemis, not by BLE.
+                  BLE is only involved when dumping data afterward.
+                </p>
+                <p>
+                  <strong>Memory estimate:</strong> The Artemis has 384 kB RAM. If timestamps are stored as 32-bit values (~4 bytes each) and temperatures are 32-bit floats (~4 bytes each),
+                  then each paired sample costs ~8 bytes total. In theory, <code>384,000 / 8 ≈ 48,000</code> samples could fit if nothing else used RAM, but realistically the program needs
+                  stack/other buffers, so the safe number is lower. In my implementation, using arrays of length 1000 only uses ~8000 bytes for the paired data, which is comfortably within RAM.
+                </p>
+
+                <!-- Optional 5000-level section for Lab 1B -->
+                <h5 class="mt-4"><strong>5000-level 1) Effective Data Rate and Overhead</strong></h5>
+                <p>
+                  I also experimented with performance by timing how long it took to send a command and receive a reply, comparing short replies and larger replies.
+                  In general, many small packets introduce proportionally more overhead, while larger replies can improve effective throughput (up to the BLE write/notify limits).
+                  I also tested reliability by increasing publish rate and checking whether the laptop missed messages.
+                </p>
+                <div class = "row">
+                    <div class="col-md-6 mb-3">
+                        <img class="img-fluid rounded" src="assets/img/lab1/lab1b_5000+_1a.png" alt="Lab 1B 5000 analysis screenshot 1a">
+                    </div>   
+                    <div class="col-md-6 mb-3">
+                        <img class="img-fluid rounded" src="assets/img/lab1/lab1b_5000+_1b.png" alt="Lab 1B 5000 analysis screenshot 1b">
+                    </div>   
+                </div>   
+                <p class="mb-2">
+                  <strong>Plot(s):</strong> <em>Data rate / RTT vs payload size</em>
+                </p>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab1/lab1b_5000+_1c.png" alt="Lab 1B 5000 analysis screenshot 1c">
+                  </div>
+                </div>
+                <p>
+                  In essence, each packet needed some amount of overhead to be transmitted.
+                  For smaller packets, they needed a lot of overhead, since it takes more packet tranmissions and more overhead to transmit a larger message.
+                  Though not tested, I assume the relationship between the number of bytes and the data rates to be effectively linear.
+                </p>
+                <!-- Optional 5000-level section for Lab 1B -->
+                <h5 class="mt-4"><strong>5000-level 2) Reliability</strong></h5>
+                <p>
+                   I also tested reliability by increasing publish rate and checking whether the laptop missed messages.
+                   I tested this by basically sending 500 integers from 0-499 and seeing if everything was received.
+                   Since nothing was missed, and all of it was outputted from 0-499, I can confidently say that the computer was able to receive everything.
+                </p>
+                <div class = "row">
+                    <div class="col-md-6 mb-3">
+                        <img class="img-fluid rounded" src="assets/img/lab1/lab1b_5000+_2a.png" alt="Lab 1B 5000 analysis screenshot 2a">
+                    </div>   
+                    <div class="col-md-6 mb-3">
+                        <img class="img-fluid rounded" src="assets/img/lab1/lab1b_5000+_2b.png" alt="Lab 1B 5000 analysis screenshot 2b">
+                    </div>   
+                </div>   
+
+                <!-- ===================== -->
+                <!-- Combined Discussion -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h2 class="text-secondary">Discussion (Lab 1A + Lab 1B)</h2>
+
+                <p>
+                  Overall, Lab 1A was mostly about getting a reliable “compile → upload → verify” workflow with the Artemis board. The main issue I hit early on was
+                  getting the board to burn at all because the <strong>bootloader would not connect</strong>. Once that was resolved, the example sketches were straightforward,
+                  and each one served as a quick test of a different subsystem (LED, serial I/O, temperature sensor, microphone).
+                </p>
+
+                <p>
+                  Lab 1B was more challenging to debug because the BLE pipeline adds multiple moving parts: Python-side command formatting, UUID/config matching, and
+                  Arduino-side command parsing. A key debugging lesson was being disciplined about <strong>variable scope</strong>, especially for data collection tasks.
+                  Arrays that store timestamps and temperatures need to persist across commands, so they must be <strong>global (or otherwise long-lived)</strong> rather than
+                  declared inside <code>handle_command()</code>, where they would reset each time a command is processed. Similarly, state variables used to coordinate multi-step
+                  behaviors (like “start collecting” vs “dump the buffer”) need to be stored in a way that survives between BLE command events.
+                </p>
+
+                <p>
+                  Once the scope issues were fixed, the system became a practical wireless debugging tool: I could send structured commands from a notebook, receive responses
+                  through notifications, and log data into Python lists for plotting and analysis. This BLE framework will be useful in later labs where USB serial isn’t convenient
+                  during motion or sensor experiments.
+                </p>
+
+              </div>
+
+              <button class="btn btn-primary mt-4" href="#" data-dismiss="modal">
+                <i class="fas fa-times fa-fw"></i>Close Window
+              </button>
+
             </div>
+          </div>
         </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
         <div class="portfolio-modal modal fade" id="portfolioModal1" tabindex="-1" role="dialog" aria-labelledby="#portfolioModal1Label" aria-hidden="true">
             <div class="modal-dialog modal-xl" role="document">
                 <div class="modal-content">
