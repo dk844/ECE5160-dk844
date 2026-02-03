@@ -241,9 +241,13 @@
                 <p>
                   For the additional task, I combined microphone input with serial output so the program could detect a few target frequency bands
                   and print the corresponding note name over serial. The key idea was to estimate a dominant frequency from the microphone samples
-                  and then map that frequency to one of three note labels (within a tolerance).
+                  and then map that frequency to one of three note labels (within a tolerance). The three target frequencies I used were 440.0f (A4), 523.25f (C5), and 659.25f (E5)
+                  I essentially got the loudest frequency to reduce noise as much as possible.
                 </p>
                 <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab1/lab1a_tuner.png" alt="Lab 1B Prelab Instruction 1 screenshot a">
+                  </div>                  
                   <div class="col-md-6 mb-3">
                     <iframe width="560" height="315" src="https://www.youtube.com/embed/INOdJrfF1hc?si=m_jJu0f1UBa6BhII" title="Lab 1a tuner" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
                   </div>
