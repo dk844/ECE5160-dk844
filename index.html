@@ -410,6 +410,7 @@
                   Instead of transmitting each sample immediately, I stored timestamps in a fixed-size array on the Artemis. Once the array was filled
                   (or a stopping condition was met), I used a <code>SEND_TIME_DATA</code> command to loop over the stored values and transmit them as a batch.
                   On the Python side, I appended received entries into a list and checked that the counts matched.
+                  On the Arduino side, the final 1000 signified that 1000 timestamps were recorded. This was a way of debugging for me. The same was done for Task 7 below.
                 </p>
                 <div class="row">
                   <div class="col-md-6 mb-3">
