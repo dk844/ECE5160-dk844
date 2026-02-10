@@ -634,9 +634,11 @@
                   I connected the ICM-20948 breakout to the Artemis using the Qwiic (I<sup>2</sup>C) connectors.
                   This provides SDA/SCL plus power/ground with a keyed cable, which is reliable and avoids wiring mistakes.
                 </p>
-                <p class="mb-2">
-                  <strong>TODO:</strong> Add a photo of the Artemis + IMU Qwiic wiring (close-up).
-                </p>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/Lab2HardwareConnection.png" alt="Lab2HardwareConnection">
+                  </div>
+                </div>               
 
                 <h5 class="mt-3"><strong>Example Code + AD0_VAL</strong></h5>
                 <p>
@@ -645,9 +647,7 @@
                   On the SparkFun Qwiic breakout, the default is typically <strong>AD0=1</strong> (often corresponding to address <code>0x69</code>), and closing the ADR jumper sets
                   it to <strong>AD0=0</strong> (often address <code>0x68</code>). The correct value is whichever one matches the hardware jumper configuration.
                 </p>
-                <p class="mb-2">
-                  <strong>TODO:</strong> Add a screenshot/photo of the Example1_Basics output working in Serial Monitor.
-                </p>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/j1GBMl9uDMQ?si=Bnn07MkY0_MEVisc" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>                
 
                 <h5 class="mt-3"><strong>What I observed when moving the board</strong></h5>
                 <p>
@@ -710,8 +710,8 @@ pitch_acc = atan2( -ax, sqrt(ay*ay + az*az) ) * 180/pi
 
                 <p>
                   The roll readings were very accurate at ±90° roll. Pitch was also accurate at ±90° pitch. However, when pitch is near ±90°,
-                  the gravity vector aligns closely with the X-axis, which makes roll poorly conditioned (a “gimbal lock” style singularity for this
-                  accelerometer-only method). That’s why the printed roll at +90° pitch can look very wrong even though pitch is correct.
+                  the gravity vector aligns closely with the X-axis, which makes roll poorly conditioned. It may have also been because I couldn't perfectly put it vertical or horizontal. Slight human errors inevitably exist.
+                  That’s why the printed roll at +90° pitch can look very wrong even though pitch is correct.
                 </p>
 
                 <!-- ===================== -->
@@ -794,7 +794,7 @@ pitch_acc = atan2( -ax, sqrt(ay*ay + az*az) ) * 180/pi
                 <p>
                   To choose a low-pass cutoff frequency, I computed the FFT of the accelerometer-based pitch signal. The spectrum was broadly noisy
                   rather than dominated by a single sharp tone, meaning much of the jitter is higher-frequency noise rather than slow attitude motion.
-                  Because the RC car attitude changes relatively slowly compared to vibration, a low cutoff is reasonable.
+                  Since the it changes relatively slowly compared to vibration, a low cutoff is reasonable, hence why I used 5 Hz as a cutoff.
                 </p>
 
                 <div class="row">
@@ -805,7 +805,7 @@ pitch_acc = atan2( -ax, sqrt(ay*ay + az*az) ) * 180/pi
 
                 <p>
                   Based on the spectrum and the need to preserve only slow orientation changes, I used a cutoff of
-                  <strong>f<sub>c</sub> ≈ 5 Hz</strong> for the low-pass filter used before sensor fusion.
+                  <strong>f<sub>c</sub> ≈ 5 Hz</strong> for the low-pass filter.
                 </p>
 
                 <!-- ===================== -->
@@ -969,9 +969,19 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
                   To maximize sampling speed, I avoided delays and did not block waiting for IMU data; instead, the loop checks whether data is ready and stores it only when available.
                 </p>
 
-                <p class="mb-2">
-                  <strong>TODO:</strong> Add a short code snippet or gist link showing the “data-ready check → store in arrays” structure (do not paste the full code).
-                </p>
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/Lab2SamplingSpeed" alt="Lab 2 Sampling Speed">
+                  </div>
+                </div>   
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/Lab2SamplingSpeed2" alt="Lab 2 Sampling Speed 2">
+                  </div>
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/Lab2SamplingSpeed3" alt="Lab 2 Sampling Speed 3">
+                  </div>
+                </div>   
 
                 <!-- ===================== -->
                 <!-- Record a stunt -->
@@ -979,16 +989,13 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
                 <hr class="my-4">
                 <h3 class="text-secondary">Record a Stunt</h3>
 
-                <p>
-                  <strong>TODO:</strong> Add a video (or multiple short videos) of driving the RC car, and describe what motions you observed
-                  (forward acceleration, braking, turning radius, how fast it reacts, how stable it is, etc.). This is used as a baseline for autonomous runs later.
-                </p>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/MFrJy8-KTes?si=3x9oF6P1n44diHgS" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
                 <!-- ===================== -->
                 <!-- Wrap-up -->
                 <!-- ===================== -->
                 <hr class="my-4">
-                <h3 class="text-secondary">Key Takeaways</h3>
+                <h3 class="text-secondary">Some Takeaways I got form this Lab 2</h3>
                 <ul>
                   <li><strong>Accelerometer angles</strong> are absolute (gravity-referenced) but noisy and sensitive to vibration/linear acceleration.</li>
                   <li><strong>Gyro integration</strong> is smooth short-term but drifts over time due to bias.</li>
