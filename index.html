@@ -68,11 +68,12 @@
                         </div>
                     </div>
                     <div class="col-md-6 col-lg-4 mb-5">
-                        <div class="portfolio-item mx-auto" data-toggle="modal" data-target="#portfolioModal1">
-                            <div class="portfolio-item-caption d-flex align-items-center justify-content-center h-100 w-100">
-                                <div class="portfolio-item-caption-content text-center text-white"><i class="fas fa-plus fa-3x"></i></div>
-                            </div><img class="img-fluid" src="assets/img/portfolio/cake.png" alt="Tasty Cake"/>
+                      <div class="portfolio-item mx-auto" data-toggle="modal" data-target="#portfolioModal1">
+                        <div class="portfolio-item-caption d-flex align-items-center justify-content-center h-100 w-100">
+                          <div class="portfolio-item-caption-content text-center text-white"><i class="fas fa-plus fa-3x"></i></div>
                         </div>
+                        <img class="img-fluid" src="assets/img/portfolio/lab2_photo.png" alt="Lab 2: IMU (ICM-20948)"/>
+                      </div>
                     </div>
                     <div class="col-md-6 col-lg-4 mb-5">
                         <div class="portfolio-item mx-auto" data-toggle="modal" data-target="#portfolioModal2">
@@ -584,33 +585,432 @@
   </div>
 </div>
 
-        <div class="portfolio-modal modal fade" id="portfolioModal1" tabindex="-1" role="dialog" aria-labelledby="#portfolioModal1Label" aria-hidden="true">
-            <div class="modal-dialog modal-xl" role="document">
-                <div class="modal-content">
-                    <button class="close" type="button" data-dismiss="modal" aria-label="Close"><span aria-hidden="true"><i class="fas fa-times"></i></span></button>
-                    <div class="modal-body text-center">
-                        <div class="container">
-                            <div class="row justify-content-center">
-                                <div class="col-lg-8">
-                                    <!-- Portfolio Modal - Title-->
-                                    <h2 class="portfolio-modal-title text-secondary mb-0">Tasty Cake</h2>
-                                    <!-- Icon Divider-->
-                                    <div class="divider-custom">
-                                        <div class="divider-custom-line"></div>
-                                        <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
-                                        <div class="divider-custom-line"></div>
-                                    </div>
-                                    <!-- Portfolio Modal - Image--><img class="img-fluid rounded mb-5" src="assets/img/portfolio/cake.png" alt="Tasty Cake"/>
-                                    <!-- Portfolio Modal - Text-->
-                                    <p class="mb-5">Lorem ipsum dolor sit amet, consectetur adipisicing elit.Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam.</p>
-                                    <button class="btn btn-primary" href="#" data-dismiss="modal"><i class="fas fa-times fa-fw"></i>Close Window</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+       <!-- Portfolio Modal (Lab 2)-->
+<div class="portfolio-modal modal fade" id="portfolioModal1" tabindex="-1" role="dialog" aria-labelledby="#portfolioModal1Label" aria-hidden="true">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true"><i class="fas fa-times"></i></span>
+      </button>
+
+      <div class="modal-body text-center">
+        <div class="container">
+          <div class="row justify-content-center">
+            <div class="col-lg-10">
+
+              <h2 class="portfolio-modal-title text-secondary mb-0">Lab 2: IMU (ICM-20948) — Pitch/Roll, Filtering, FFT, Complementary Filter</h2>
+
+              <div class="divider-custom">
+                <div class="divider-custom-line"></div>
+                <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+                <div class="divider-custom-line"></div>
+              </div>
+
+              <!-- Optional header image -->
+              <!-- TODO: replace with a real Lab 2 photo of the Artemis+IMU wiring -->
+              <img class="img-fluid rounded mb-4" src="assets/img/portfolio/lab2_photo.png" alt="Lab 2 Overview"/>
+
+              <div class="text-left">
+
+                <!-- ===================== -->
+                <!-- Overview -->
+                <!-- ===================== -->
+                <h3 class="text-secondary">Overview</h3>
+                <p>
+                  In this lab, I connected the <strong>ICM-20948 IMU</strong> to the Artemis using the Qwiic connectors, verified the vendor example,
+                  and then built a pipeline to (1) compute <strong>pitch/roll from the accelerometer</strong>, (2) analyze accelerometer noise using an
+                  <strong>FFT</strong>, (3) apply a <strong>low-pass filter</strong> to reduce vibration/noise, (4) compute angles by <strong>integrating
+                  gyroscope rates</strong> (and observe drift), and (5) fuse both sensors using a <strong>complementary filter</strong> for a stable estimate.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Setup -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Set Up the IMU</h3>
+
+                <h5 class="mt-3"><strong>Hardware Connections</strong></h5>
+                <p>
+                  I connected the ICM-20948 breakout to the Artemis using the Qwiic (I<sup>2</sup>C) connectors.
+                  This provides SDA/SCL plus power/ground with a keyed cable, which is reliable and avoids wiring mistakes.
+                </p>
+                <p class="mb-2">
+                  <strong>TODO:</strong> Add a photo of the Artemis + IMU Qwiic wiring (close-up).
+                </p>
+
+                <h5 class="mt-3"><strong>Example Code + AD0_VAL</strong></h5>
+                <p>
+                  I installed the <em>SparkFun 9DOF IMU Breakout_ICM 20948_Arduino Library</em> and ran the Example1_Basics sketch.
+                  The <code>AD0_VAL</code> definition controls the least-significant bit of the IMU’s I<sup>2</sup>C address (it reflects the state of the AD0 pin/jumper).
+                  On the SparkFun Qwiic breakout, the default is typically <strong>AD0=1</strong> (often corresponding to address <code>0x69</code>), and closing the ADR jumper sets
+                  it to <strong>AD0=0</strong> (often address <code>0x68</code>). The correct value is whichever one matches the hardware jumper configuration.
+                </p>
+                <p class="mb-2">
+                  <strong>TODO:</strong> Add a screenshot/photo of the Example1_Basics output working in Serial Monitor.
+                </p>
+
+                <h5 class="mt-3"><strong>What I observed when moving the board</strong></h5>
+                <p>
+                  When I rotated or flipped the board, the accelerometer axes changed in a way consistent with gravity re-projecting onto the sensor axes.
+                  When the board was roughly flat and still, the Z-axis stayed near <strong>~1g</strong> (≈1000 mg), while X/Y stayed near ~0 (with noise).
+                  The gyroscope measured angular velocity (deg/s), so when the board was not rotating it hovered around 0, and when I rotated it I saw spikes whose sign
+                  depended on rotation direction.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Accelerometer Angles -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Accelerometer: Pitch/Roll from Gravity</h3>
+
+                <h5 class="mt-3"><strong>Angle Equations</strong></h5>
+                <p>
+                  Using the class equations, I computed pitch and roll from accelerometer readings (units can be mg since ratios cancel).
+                  A common stable form is:
+                </p>
+
+<pre><code>// ax, ay, az in mg (or m/s^2), output in degrees
+roll_acc  = atan2( ay, az ) * 180/pi
+pitch_acc = atan2( -ax, sqrt(ay*ay + az*az) ) * 180/pi
+</code></pre>
+
+                <h5 class="mt-3"><strong>Static angle checks at {-90, 0, 90} degrees</strong></h5>
+                <p>
+                  I tested known orientations using the table surface/edges as guides. Below are my console outputs:
+                </p>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/0PitchRoll.png" alt="0 degrees pitch/roll output">
+                    <p class="mt-2 mb-0"><strong>0° reference:</strong> Pitch ≈ 0.573°, Roll ≈ −0.437°</p>
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/90Roll.png" alt="+90 roll output">
+                    <p class="mt-2 mb-0"><strong>+90° roll:</strong> Roll ≈ 89.320°, Pitch ≈ 0.794°</p>
+                  </div>
                 </div>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/-90Roll.png" alt="-90 roll output">
+                    <p class="mt-2 mb-0"><strong>−90° roll:</strong> Roll ≈ −88.841°, Pitch ≈ 1.876°</p>
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/90Pitch.png" alt="+90 pitch output">
+                    <p class="mt-2 mb-0"><strong>+90° pitch:</strong> Pitch ≈ 89.797° (roll becomes unstable near ±90° pitch)</p>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/-90Pitch.png" alt="-90 pitch output">
+                    <p class="mt-2 mb-0"><strong>−90° pitch:</strong> Pitch ≈ −89.021° (roll becomes unstable near ±90° pitch)</p>
+                  </div>
+                </div>
+
+                <p>
+                  The roll readings were very accurate at ±90° roll. Pitch was also accurate at ±90° pitch. However, when pitch is near ±90°,
+                  the gravity vector aligns closely with the X-axis, which makes roll poorly conditioned (a “gimbal lock” style singularity for this
+                  accelerometer-only method). That’s why the printed roll at +90° pitch can look very wrong even though pitch is correct.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Quiet Data -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Quiet Data: Sampling + Raw Signals</h3>
+
+                <h5 class="mt-3"><strong>Data format and 5-second capture</strong></h5>
+                <p>
+                  I captured and transmitted a time-stamped IMU log using the format:
+                  <code>t_us, ax_mg, ay_mg, az_mg, gx_dps, gy_dps, gz_dps</code>.
+                  In my quiet run, I captured <strong>663 samples</strong> over <strong>~5.29 s</strong>, for an effective sampling frequency of
+                  <strong>~125.08 Hz</strong> (target IMU period was 5000 µs → ~200 Hz, but overhead reduced the achieved rate).
+                </p>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/QuietHeaderReceivedRows.png" alt="Quiet header + rows received">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/QuietDurationApproxfs.png" alt="Quiet duration and sampling frequency">
+                  </div>
+                </div>
+
+                <h5 class="mt-3"><strong>Raw accelerometer and gyroscope</strong></h5>
+                <p>
+                  In quiet conditions, the accelerometer Z-axis stays near ~1g (~1000 mg) with small noise, while X/Y hover near 0.
+                  The gyroscope axes hover near 0 deg/s with noise; any bumps/hand motion show up as spikes.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/QuietRawAccelGyroPlot.png" alt="Quiet raw accelerometer and gyroscope plots">
+                  </div>
+                </div>
+
+                <h5 class="mt-3"><strong>Pitch/Roll from accelerometer (quiet)</strong></h5>
+                <p>
+                  The accelerometer-derived pitch/roll estimates are fairly noisy because accelerometers measure both gravity and linear accelerations/vibrations.
+                  Even when still, micro-vibrations and sensor noise cause jitter in the computed angles.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/QuietPitchRollPlot.png" alt="Quiet pitch/roll from accelerometer plot">
+                  </div>
+                </div>
+
+                <!-- ===================== -->
+                <!-- Calibration -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Accelerometer Accuracy: Two-Point Calibration</h3>
+
+                <p>
+                  To reduce bias and small scaling error, I applied a simple two-parameter calibration on pitch:
+                </p>
+
+<pre><code>pitch_calibrated = a * pitch_raw + b</code></pre>
+
+                <p>
+                  From my calibration run, the fitted parameters were:
+                  <strong>a = 1.0150104375747704</strong>, <strong>b = −0.28927677393249907</strong>.
+                  This slightly increases the scale and shifts the offset so that the “flat” condition is closer to the expected value.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/QuietPitchCalibration0Degrees.png" alt="Quiet pitch two-point calibration plot">
+                  </div>
+                </div>
+
+                <!-- ===================== -->
+                <!-- FFT + cutoff -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Noise Analysis: FFT and Cutoff Selection</h3>
+
+                <p>
+                  To choose a low-pass cutoff frequency, I computed the FFT of the accelerometer-based pitch signal. The spectrum was broadly noisy
+                  rather than dominated by a single sharp tone, meaning much of the jitter is higher-frequency noise rather than slow attitude motion.
+                  Because the RC car attitude changes relatively slowly compared to vibration, a low cutoff is reasonable.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/QuietFFTPlot.png" alt="Quiet FFT plot for pitch_acc and 0-50Hz zoom">
+                  </div>
+                </div>
+
+                <p>
+                  Based on the spectrum and the need to preserve only slow orientation changes, I used a cutoff of
+                  <strong>f<sub>c</sub> ≈ 5 Hz</strong> for the low-pass filter used before sensor fusion.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Low-pass filter -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Low-Pass Filter (LPF) on Accelerometer Angles</h3>
+
+                <p>
+                  I implemented a simple first-order IIR low-pass filter:
+                </p>
+
+<pre><code>// dt in seconds, fc in Hz
+alpha = exp(-2*pi*fc*dt)
+y[k] = alpha*y[k-1] + (1-alpha)*x[k]</code></pre>
+
+                <p>
+                  With <strong>f<sub>c</sub>=5 Hz</strong>, the filtered pitch angle is noticeably smoother than the raw pitch, while still tracking the slow trend.
+                  If f<sub>c</sub> is too low, the output lags real motion; if it is too high, too much vibration remains.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/QuietLPFPlot.png" alt="Quiet low-pass filtering effect plot">
+                  </div>
+                </div>
+
+                <!-- ===================== -->
+                <!-- Gyro integration -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Gyroscope: Integrated Angles and Drift</h3>
+
+                <p>
+                  I computed pitch/roll/yaw by integrating gyroscope rates over time:
+                </p>
+
+<pre><code>// omega in deg/s
+theta[k] = theta[k-1] + omega[k]*dt</code></pre>
+
+                <p>
+                  The key issue is <strong>drift</strong>: even a small constant bias (e.g., 0.2 deg/s) accumulates into degrees of error after a few seconds.
+                  In my data, the integrated gyro angles show a clear slow drift despite the board being mostly stationary.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/QuietGyroIntegratedPlot.png" alt="Quiet gyro integrated angles plot">
+                  </div>
+                </div>
+
+                <!-- ===================== -->
+                <!-- Complementary filter -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Complementary Filter: Stable + Responsive Pitch/Roll</h3>
+
+                <p>
+                  To combine the short-term accuracy of the gyro with the long-term stability of the accelerometer, I used a complementary filter:
+                </p>
+
+<pre><code>// gyro_pred = (theta_prev + omega*dt)
+// acc_term  = theta_acc_LPF
+theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
+
+                <p>
+                  The results show the expected behavior:
+                  the <strong>gyro-integrated</strong> curve drifts, the <strong>accelerometer LPF</strong> curve is noisy (especially under impulse/vibration),
+                  and the <strong>complementary output</strong> stays stable without long-term drift while still reacting smoothly.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/QuietComplementaryFilterPlot.png" alt="Quiet complementary filter plot for pitch and roll">
+                  </div>
+                </div>
+
+                <!-- ===================== -->
+                <!-- Vibration Data -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Vibration Data: Effect on Noise + Filtering</h3>
+
+                <p>
+                  I repeated the same collection/analysis while inducing vibration (placing the IMU on the table and gently striking the table).
+                  Compared to quiet conditions, the accelerometer-derived angles become much noisier because vibrations add high-frequency components.
+                  This is exactly why the <strong>LPF + complementary filter</strong> are useful: the LPF suppresses high-frequency accelerometer noise,
+                  and the complementary filter prevents gyro drift while rejecting quick accelerometer spikes.
+                </p>
+
+                <p class="mb-2">
+                  Below are the vibration plots (same pipeline as quiet):
+                </p>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/VibrationHeaderReceivedRows.png" alt="Vibration header + rows received">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/VibrationDurationApproxfs.png" alt="Vibration duration and sampling frequency">
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/VibrationRawAccelGyroPlot.png" alt="Vibration raw accelerometer and gyroscope plots">
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/VibrationPitchRollPlot.png" alt="Vibration pitch/roll from accelerometer plot">
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/VibrationFFTPlot.png" alt="Vibration FFT plot for pitch_acc">
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/VibrationLPFPlot.png" alt="Vibration low-pass filtering effect plot">
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/VibrationGyroIntegratedPlot.png" alt="Vibration gyro integrated angles plot">
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/VibrationComplementaryFilterPlot.png" alt="Vibration complementary filter plot for pitch and roll">
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/VibrationPitchCalibration0Degrees.png" alt="Vibration pitch calibration plot">
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab2/VibrationData.png" alt="Vibration data figure">
+                  </div>
+                </div>
+
+                <!-- ===================== -->
+                <!-- Sampling + speed -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Sampling Speed Discussion</h3>
+
+                <p>
+                  The IMU period target was <strong>5000 µs</strong> (≈200 Hz), but the measured effective rates were lower in practice (on the order of ~125–133 Hz in my runs).
+                  The main reasons are loop overhead (I<sup>2</sup>C transactions, floating-point math, and any remaining debug/communication overhead).
+                  To maximize sampling speed, I avoided delays and did not block waiting for IMU data; instead, the loop checks whether data is ready and stores it only when available.
+                </p>
+
+                <p class="mb-2">
+                  <strong>TODO:</strong> Add a short code snippet or gist link showing the “data-ready check → store in arrays” structure (do not paste the full code).
+                </p>
+
+                <!-- ===================== -->
+                <!-- Record a stunt -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Record a Stunt</h3>
+
+                <p>
+                  <strong>TODO:</strong> Add a video (or multiple short videos) of driving the RC car, and describe what motions you observed
+                  (forward acceleration, braking, turning radius, how fast it reacts, how stable it is, etc.). This is used as a baseline for autonomous runs later.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Wrap-up -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Key Takeaways</h3>
+                <ul>
+                  <li><strong>Accelerometer angles</strong> are absolute (gravity-referenced) but noisy and sensitive to vibration/linear acceleration.</li>
+                  <li><strong>Gyro integration</strong> is smooth short-term but drifts over time due to bias.</li>
+                  <li><strong>FFT</strong> helps justify a cutoff that removes vibration while keeping real attitude changes.</li>
+                  <li><strong>LPF + complementary filter</strong> produces an angle estimate that is both stable and responsive.</li>
+                </ul>
+
+              </div>
+
+              <button class="btn btn-primary mt-4" href="#" data-dismiss="modal">
+                <i class="fas fa-times fa-fw"></i>Close Window
+              </button>
+
             </div>
+          </div>
         </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
         <div class="portfolio-modal modal fade" id="portfolioModal2" tabindex="-1" role="dialog" aria-labelledby="#portfolioModal2Label" aria-hidden="true">
             <div class="modal-dialog modal-xl" role="document">
                 <div class="modal-content">
