@@ -963,6 +963,7 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
                   The IMU period target was <strong>5000 µs</strong> (≈200 Hz), but the measured effective rates were lower in practice (on the order of ~125–133 Hz in my runs).
                   The main reasons are loop overhead (I<sup>2</sup>C transactions, floating-point math, and any remaining debug/communication overhead).
                   To maximize sampling speed, I avoided delays and did not block waiting for IMU data; instead, the loop checks whether data is ready and stores it only when available.
+                  Though I tried to get it to as close as 5 seconds as possible, there were some inevitable delays, thus making it offset by 0.2-3 seconds.
                 </p>
 
                 <div class="row">
