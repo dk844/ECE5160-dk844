@@ -1015,33 +1015,277 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
   </div>
 </div>
 
-        <div class="portfolio-modal modal fade" id="portfolioModal2" tabindex="-1" role="dialog" aria-labelledby="#portfolioModal2Label" aria-hidden="true">
-            <div class="modal-dialog modal-xl" role="document">
-                <div class="modal-content">
-                    <button class="close" type="button" data-dismiss="modal" aria-label="Close"><span aria-hidden="true"><i class="fas fa-times"></i></span></button>
-                    <div class="modal-body text-center">
-                        <div class="container">
-                            <div class="row justify-content-center">
-                                <div class="col-lg-8">
-                                    <!-- Portfolio Modal - Title-->
-                                    <h2 class="portfolio-modal-title text-secondary mb-0">Circus Tent</h2>
-                                    <!-- Icon Divider-->
-                                    <div class="divider-custom">
-                                        <div class="divider-custom-line"></div>
-                                        <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
-                                        <div class="divider-custom-line"></div>
-                                    </div>
-                                    <!-- Portfolio Modal - Image--><img class="img-fluid rounded mb-5" src="assets/img/portfolio/circus.png" alt="Circus Tent"/>
-                                    <!-- Portfolio Modal - Text-->
-                                    <p class="mb-5">Lorem ipsum dolor sit amet, consectetur adipisicing elit.Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam.</p>
-                                    <button class="btn btn-primary" href="#" data-dismiss="modal"><i class="fas fa-times fa-fw"></i>Close Window</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+<!-- Portfolio Modal (Lab 3)-->
+<div class="portfolio-modal modal fade" id="portfolioModal2" tabindex="-1" role="dialog" aria-labelledby="#portfolioModal2Label" aria-hidden="true">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true"><i class="fas fa-times"></i></span>
+      </button>
+
+      <div class="modal-body text-center">
+        <div class="container">
+          <div class="row justify-content-center">
+            <div class="col-lg-10">
+
+              <!-- Title -->
+              <h2 class="portfolio-modal-title text-secondary mb-0">Lab 3: Time-of-Flight (VL53L1X) — Dual Sensors + Non-Blocking Reads + BLE Logging</h2>
+
+              <!-- Divider -->
+              <div class="divider-custom">
+                <div class="divider-custom-line"></div>
+                <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+                <div class="divider-custom-line"></div>
+              </div>
+
+              <!-- Hero image -->
+              <img class="img-fluid rounded mb-4" src="assets/img/portfolio/TODO_lab3_cover.png" alt="Lab 3 Overview (TODO replace image)"/>
+
+              <div class="text-left">
+
+                <!-- ===================== -->
+                <!-- Overview -->
+                <!-- ===================== -->
+                <h3 class="text-secondary">Overview</h3>
+                <p>
+                  In this lab, I integrated two <strong>VL53L1X Time-of-Flight (ToF)</strong> distance sensors with the Artemis (via the Qwiic I<sup>2</sup>C bus),
+                  and built a data pipeline to (1) run both sensors at the same time, (2) avoid blocking the main loop by checking
+                  <code>checkForDataReady()</code>, and (3) record <strong>time-stamped distance</strong> and <strong>time-stamped IMU</strong> data for a fixed
+                  duration and then transmit the results over <strong>Bluetooth (BLE)</strong> to my laptop for plotting in Python.
+                </p>
+
+                <h4 class="text-secondary mt-4">Parts Required</h4>
+                <ul>
+                  <li>1× SparkFun RedBoard Artemis Nano</li>
+                  <li>1× Qwiic breakout board (to expose SDA/SCL/VCC/GND)</li>
+                  <li>2× VL53L1X ToF sensors (Qwiic or wired)</li>
+                  <li>Qwiic cables (one cut + soldered if needed)</li>
+                  <li>(Optional for untethered) 650 mAh battery + JST lead</li>
+                </ul>
+
+                <!-- ===================== -->
+                <!-- Prelab -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Prelab</h3>
+
+                <h5 class="mt-3"><strong>I<sup>2</sup>C address (expected)</strong></h5>
+                <p>
+                  The VL53L1X appears on the I<sup>2</sup>C bus at a default address that I verified by scanning the bus on the Artemis.
+                  <br>
+                  <strong>TODO:</strong> Insert the scanned address you observed (and a screenshot of the scan output).
+                </p>
+
+                <h5 class="mt-3"><strong>Using two sensors: approach + rationale</strong></h5>
+                <p>
+                  Because both sensors share the same default I<sup>2</sup>C address, I needed a method to make them addressable simultaneously.
+                  There are two common approaches:
+                </p>
+                <ul>
+                  <li>
+                    <strong>Re-address one sensor in software (preferred long-term):</strong> boot with only one sensor enabled, change its address
+                    programmatically, then enable the second sensor at the default address. After that, both can stay powered and be polled normally.
+                    This is convenient because it avoids repeatedly power-cycling sensors.
+                  </li>
+                  <li>
+                    <strong>Use XSHUT (shutdown) pins to enable/disable sensors:</strong> only one sensor is powered/awake at a time, so both can keep the
+                    default address, but you have to toggle shutdown pins whenever switching which sensor is active.
+                  </li>
+                </ul>
+                <p>
+                  For my robot, I chose: <strong>TODO: state which one you chose</strong> because <strong>TODO: one sentence justification</strong>.
+                </p>
+
+                <h5 class="mt-3"><strong>Planned sensor placement + blind spots</strong></h5>
+                <p>
+                  I mounted/plan to mount one ToF sensor facing forward to detect obstacles in the direction of motion, and a second ToF sensor angled to the side
+                  to detect walls/side obstacles for future wall-following and obstacle avoidance.
+                </p>
+                <ul>
+                  <li><strong>Forward sensor:</strong> best for frontal collision avoidance and detecting objects directly in the path.</li>
+                  <li><strong>Side sensor:</strong> best for maintaining distance to a wall and detecting side obstacles during turns.</li>
+                </ul>
+                <p>
+                  <strong>Scenarios that can be missed:</strong> very thin obstacles (small cross-section), obstacles outside the sensor’s field-of-view,
+                  obstacles at extreme angles (weak return), and low obstacles that are below the optical path depending on mounting height.
+                </p>
+                <p><strong>TODO:</strong> Add a quick sketch/diagram of your chassis + sensor locations and explain why you chose those locations.</p>
+
+                <!-- ===================== -->
+                <!-- Wiring -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Wiring + Hardware Setup</h3>
+
+                <h5 class="mt-3"><strong>Qwiic breakout wiring</strong></h5>
+                <p>
+                  I connected the Qwiic breakout to the Artemis to access the I<sup>2</sup>C lines (SDA/SCL), power, and ground. Then I connected the first
+                  ToF sensor via Qwiic cable (or soldered cable) and verified basic operation before attaching the second sensor.
+                </p>
+                <p><strong>TODO:</strong> Insert a picture of your ToF sensor connected to the Qwiic breakout board.</p>
+
+                <!-- ===================== -->
+                <!-- I2C scan -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">I<sup>2</sup>C Scan + Address Verification</h3>
+                <p>
+                  I used the Apollo3 Wire example (<code>Example05_wire_I2C</code>) as a reference for scanning the I<sup>2</sup>C bus. The scan prints all
+                  responding addresses and confirms that the sensor is detected and that the bus wiring is correct.
+                </p>
+                <p><strong>TODO:</strong> Add screenshot of the Serial Monitor showing the I<sup>2</sup>C scan results + your explanation of why the address matches or differs from what you expected.</p>
+
+                <!-- ===================== -->
+                <!-- Mode testing -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Mode Selection + Single-Sensor Validation</h3>
+                <p>
+                  The VL53L1X supports multiple ranging modes, typically <strong>Short</strong> and <strong>Long</strong> in the SparkFun library.
+                  I tested my chosen mode using the vendor example (<code>Example1_ReadDistance</code>) to measure:
+                  <strong>range</strong>, <strong>accuracy</strong>, <strong>repeatability</strong>, and <strong>ranging time</strong>.
+                </p>
+                <ul>
+                  <li><strong>Short mode:</strong> better at close range, often more robust indoors, but smaller maximum range.</li>
+                  <li><strong>Long mode:</strong> larger maximum range, but may be more sensitive to environment/angle/return strength.</li>
+                </ul>
+                <p><strong>Chosen mode:</strong> <strong>TODO</strong> (Short / Long) with brief rationale.</p>
+                <p><strong>TODO:</strong> Insert your measured range/accuracy/repeatability and a screenshot/video of the example working.</p>
+
+                <!-- ===================== -->
+                <!-- Dual sensor demo -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Dual ToF + IMU Running in Parallel</h3>
+                <p>
+                  After confirming each ToF sensor worked independently, I connected both sensors and ran them in parallel with the IMU.
+                  The main goal was to prove that the Artemis could service both I<sup>2</sup>C sensors (ToF + IMU) in one loop without locking up.
+                </p>
+                <p><strong>TODO:</strong> Insert a short video or screenshot showing both ToF readings updating while the IMU service is also running.</p>
+
+                <!-- ===================== -->
+                <!-- Non-blocking loop -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Non-Blocking Sensor Loop + Speed (Limiting Factor)</h3>
+                <p>
+                  In future labs, the robot will need fast control loops, so the code cannot block while waiting for a sensor.
+                  To enforce this, my loop continuously prints the Artemis clock (or increments a counter) as fast as possible,
+                  and only prints new ToF readings when <code>distanceSensor.checkForDataReady()</code> indicates fresh data is available.
+                </p>
+                <p>
+                  <strong>How fast does the loop execute?</strong><br>
+                  I benchmarked the loop rate by counting iterations over a fixed time window and computing:
+                  <code>loop_hz = iterations / elapsed_time</code>.
+                </p>
+                <p>
+                  <strong>Current limiting factor:</strong> in practice, the limiting factor is usually the time spent in I<sup>2</sup>C transactions
+                  (sensor reads), plus any serial/BLE printing overhead. If the loop prints too much to Serial, Serial output becomes the bottleneck.
+                </p>
+                <p><strong>TODO:</strong> Insert your measured loop frequency (Hz) and a short explanation of what dominated runtime.</p>
+                <p><strong>TODO:</strong> Include the small code snippet you used for measuring loop speed (not full program).</p>
+
+                <!-- ===================== -->
+                <!-- BLE logging -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Time-Stamped Logging + BLE Transfer</h3>
+                <p>
+                  I extended my Lab 1 BLE framework so the Artemis can record sensor data for a set duration (e.g., 5 seconds),
+                  store it in arrays, and then transmit it over BLE as chunked strings.
+                  This is a buffered logging approach: sampling happens locally on the Artemis first, then the data is “dumped” afterward.
+                </p>
+                <ul>
+                  <li><strong>ToF log format:</strong> <code>t_us, tof_front_mm, tof_side_mm</code></li>
+                  <li><strong>IMU log format:</strong> <code>t_us, ax_mg, ay_mg, az_mg, gx_dps, gy_dps, gz_dps</code></li>
+                </ul>
+
+                <p><strong>TODO:</strong> Add a screenshot of the Jupyter output showing the successful dump (counts and sample lines).</p>
+
+                <!-- ===================== -->
+                <!-- Plots -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Results</h3>
+
+                <h5 class="mt-3"><strong>Time vs Distance (Two ToF Sensors)</strong></h5>
+                <p>
+                  I plotted both ToF distance measurements against time after transferring the recorded samples over BLE.
+                  This plot is used later for obstacle detection and wall-following behaviors.
+                </p>
+                <p><strong>TODO:</strong> Insert your ToF plot image here.</p>
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab3/TODO_tof_plot.png" alt="TODO: ToF distance vs time plot">
+                  </div>
                 </div>
+
+                <h5 class="mt-3"><strong>Time vs Angle (IMU)</strong></h5>
+                <p>
+                  Using the IMU pipeline from Lab 2, I plotted IMU-derived motion (raw accel/gyro and/or pitch/roll) against time.
+                  This provides an orientation/tilt reference that can be fused later with ToF-based navigation logic.
+                </p>
+                <p><strong>TODO:</strong> Insert your IMU plot image(s) here (raw accel/gyro and/or pitch/roll).</p>
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab3/TODO_imu_plot.png" alt="TODO: IMU vs time plot">
+                  </div>
+                </div>
+
+                <!-- ===================== -->
+                <!-- Discussion -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Discussion</h3>
+                <p>
+                  The main engineering constraint in this lab was <strong>timing</strong>: ToF ranging takes a non-trivial amount of time, and blocking
+                  while waiting for a measurement would stall any control logic. The non-blocking structure using <code>checkForDataReady()</code> allows the
+                  loop to keep running quickly and handle other tasks (BLE, control updates, other sensors).
+                </p>
+                <p>
+                  The BLE logging strategy also mirrors real robotics workflows: sample data quickly on-board, then transmit it in chunks.
+                  This avoids BLE becoming the bottleneck during time-critical sampling periods.
+                </p>
+
+                <!-- ===================== -->
+                <!-- 5000-level tasks -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">(5000-level) Additional Tasks</h3>
+                <p>
+                  I did not complete the additional 5000-level tasks yet. Below is the plan I would use to complete them:
+                </p>
+
+                <h5 class="mt-3"><strong>1) Infrared-transmission based sensors: compare a couple types</strong></h5>
+                <ul>
+                  <li><strong>Reflective IR proximity sensors:</strong> emit IR and measure reflected intensity. Pros: cheap/simple. Cons: distance is indirect and depends heavily on surface reflectivity.</li>
+                  <li><strong>IR triangulation sensors:</strong> estimate distance from spot position on a detector. Pros: decent short-range distance. Cons: limited range, affected by surface/angle.</li>
+                  <li><strong>Time-of-Flight (VL53L1X):</strong> measures time delay of returned photons. Pros: more direct distance measurement and generally better linearity. Cons: can struggle with very dark/angled targets, and has finite ranging time.</li>
+                </ul>
+                <p><strong>TODO (if doing 5000-level):</strong> Add a short comparison table and cite the sensors you chose.</p>
+
+                <h5 class="mt-3"><strong>2) Sensitivity to colors and textures</strong></h5>
+                <p>
+                  To test sensitivity, I would fix the sensor at a known distance (e.g., 200 mm, 400 mm, 800 mm) and measure repeated readings for targets with:
+                  <strong>white matte</strong>, <strong>black matte</strong>, <strong>glossy</strong>, and <strong>textured</strong> surfaces.
+                  For each surface, I would compute mean error and standard deviation, and then plot error bars vs distance.
+                </p>
+                <p><strong>TODO (if doing 5000-level):</strong> Add your test photos + a plot of measurement error vs target type.</p>
+
+              </div>
+
+              <button class="btn btn-primary mt-4" href="#" data-dismiss="modal">
+                <i class="fas fa-times fa-fw"></i>Close Window
+              </button>
+
             </div>
+          </div>
         </div>
+      </div>
+
+    </div>
+  </div>
+</div>
         <div class="portfolio-modal modal fade" id="portfolioModal3" tabindex="-1" role="dialog" aria-labelledby="#portfolioModal3Label" aria-hidden="true">
             <div class="modal-dialog modal-xl" role="document">
                 <div class="modal-content">
