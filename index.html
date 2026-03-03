@@ -1096,7 +1096,7 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
                   </li>
                 </ul>
                 <p>
-                  For my robot, I chose: <strong>TODO: state which one you chose</strong> because <strong>TODO: one sentence justification</strong>.
+                  For my robot, I chose to use the XSHUT pins, since I can easily shut or open the pin, thus allowing me to use both ToF sensors simultaneously. This is important for fast sensing.
                 </p>
 
                 <h5 class="mt-3"><strong>Planned sensor placement + blind spots</strong></h5>
@@ -1112,8 +1112,11 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
                   <strong>Scenarios that can be missed:</strong> very thin obstacles (small cross-section), obstacles outside the sensor’s field-of-view,
                   obstacles at extreme angles (weak return), and low obstacles that are below the optical path depending on mounting height.
                 </p>
-                <p><strong>TODO:</strong> Add a quick sketch/diagram of your chassis + sensor locations and explain why you chose those locations.</p>
-
+                  <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab3/lab3_2.png" alt="Sensor locations">
+                  </div>
+                </div>
                 <!-- ===================== -->
                 <!-- Wiring -->
                 <!-- ===================== -->
@@ -1123,10 +1126,13 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
                 <h5 class="mt-3"><strong>Qwiic breakout wiring</strong></h5>
                 <p>
                   I connected the Qwiic breakout to the Artemis to access the I<sup>2</sup>C lines (SDA/SCL), power, and ground. Then I connected the first
-                  ToF sensor via Qwiic cable (or soldered cable) and verified basic operation before attaching the second sensor.
+                  ToF sensor via Qwiic cable and verified basic operation before attaching the second sensor.
                 </p>
-                <p><strong>TODO:</strong> Insert a picture of your ToF sensor connected to the Qwiic breakout board.</p>
-
+                  <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab3/lab3_3.png" alt="Connections">
+                  </div>
+                </div>
                 <!-- ===================== -->
                 <!-- I2C scan -->
                 <!-- ===================== -->
@@ -1134,10 +1140,13 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
                 <h3 class="text-secondary">I<sup>2</sup>C Scan + Address Verification</h3>
                 <p>
                   I used the Apollo3 Wire example (<code>Example05_wire_I2C</code>) as a reference for scanning the I<sup>2</sup>C bus. The scan prints all
-                  responding addresses and confirms that the sensor is detected and that the bus wiring is correct.
+                  responding addresses and confirms that the sensor is detected and that the bus wiring is correct. From the datasheet, I expected it to be 0x52. The reason why it is actually an address of 0x29 is because in 8 digit binary, 0x52 is actually 01010010 and 0x29 actually represents the first 7 static digits. Thus, it does actually make sense.
                 </p>
-                <p><strong>TODO:</strong> Add screenshot of the Serial Monitor showing the I<sup>2</sup>C scan results + your explanation of why the address matches or differs from what you expected.</p>
-
+                  <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab3/lab3_1.png" alt="Address">
+                  </div>
+                </div>
                 <!-- ===================== -->
                 <!-- Mode testing -->
                 <!-- ===================== -->
@@ -1152,9 +1161,15 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
                   <li><strong>Short mode:</strong> better at close range, often more robust indoors, but smaller maximum range.</li>
                   <li><strong>Long mode:</strong> larger maximum range, but may be more sensitive to environment/angle/return strength.</li>
                 </ul>
-                <p><strong>Chosen mode:</strong> <strong>TODO</strong> (Short / Long) with brief rationale.</p>
-                <p><strong>TODO:</strong> Insert your measured range/accuracy/repeatability and a screenshot/video of the example working.</p>
-
+                <p>I chose to do the Short mode since it was far more accurate when detecting collisions and key distances. I tried by attaching the ToF sensor to a fixed object and moved it for repeatability and measured range, thus testing it worked. I faced it to a wall and made sure it was vertical so that it was reading correctly. I tested the same scenario for both the Long and Short mode. I found that the standard dveiation for the short mode is much lower than the standard deviation for the Long mode. I did this by taking 70 points from a certain distance measured. I measured with a ruler that it was around 1.5-1.6 cm away from the wall, which does support the logic behind the Short mode. I made it this close because I am expecting the ToF sensors to be necessary for avoiding collisions more than anything. Even if I need to change to long mode later, that is fine as well, since I made a separate helper function that ensures I can switch modes easily.</p>
+                 <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab3/lab3_4.png" alt="Short Mode">
+                  </div>
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab3/lab3_5.png" alt="Long Mode">
+                  </div>
+                </div>
                 <!-- ===================== -->
                 <!-- Dual sensor demo -->
                 <!-- ===================== -->
@@ -1162,7 +1177,7 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
                 <h3 class="text-secondary">Dual ToF + IMU Running in Parallel</h3>
                 <p>
                   After confirming each ToF sensor worked independently, I connected both sensors and ran them in parallel with the IMU.
-                  The main goal was to prove that the Artemis could service both I<sup>2</sup>C sensors (ToF + IMU) in one loop without locking up.
+                  The main goal was to prove that the Artemis could service both I<sup>2</sup>C sensors (ToF + IMU) in one loop without locking up. I used a FUSED_START_RECORD case for this. After initializing both the IMU and ToF, I made sure that the FUSED is simultaneously taking in the data for both the IMU and the ToF. Below is a video showing how it works.
                 </p>
                 <p><strong>TODO:</strong> Insert a short video or screenshot showing both ToF readings updating while the IMU service is also running.</p>
 
@@ -1183,10 +1198,13 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
                 </p>
                 <p>
                   <strong>Current limiting factor:</strong> in practice, the limiting factor is usually the time spent in I<sup>2</sup>C transactions
-                  (sensor reads), plus any serial/BLE printing overhead. If the loop prints too much to Serial, Serial output becomes the bottleneck.
+                  (sensor reads), plus any serial/BLE printing overhead. If the loop prints too much to Serial, Serial output becomes the bottleneck. My measured loop frequency was around 800 Hz without activating the ToF. With activating the ToF, it shot down to around 160 Hz (with both ToF sensors initialized). As such, it is clear that the loop itself is much faster than the sensor data being ready. Thus, the ToF sensors are clearly the limiting factor in this.
                 </p>
-                <p><strong>TODO:</strong> Insert your measured loop frequency (Hz) and a short explanation of what dominated runtime.</p>
-                <p><strong>TODO:</strong> Include the small code snippet you used for measuring loop speed (not full program).</p>
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab3/lab3_6.png" alt="Loop Frequency">
+                  </div>
+                </div>
 
                 <!-- ===================== -->
                 <!-- BLE logging -->
@@ -1203,8 +1221,14 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
                   <li><strong>IMU log format:</strong> <code>t_us, ax_mg, ay_mg, az_mg, gx_dps, gy_dps, gz_dps</code></li>
                 </ul>
 
-                <p><strong>TODO:</strong> Add a screenshot of the Jupyter output showing the successful dump (counts and sample lines).</p>
-
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab3/lab3_7.png" alt="Chunked">
+                  </div>
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab3/lab3_8.png" alt="Dumped">
+                  </div>
+                </div>
                 <!-- ===================== -->
                 <!-- Plots -->
                 <!-- ===================== -->
@@ -1216,10 +1240,9 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
                   I plotted both ToF distance measurements against time after transferring the recorded samples over BLE.
                   This plot is used later for obstacle detection and wall-following behaviors.
                 </p>
-                <p><strong>TODO:</strong> Insert your ToF plot image here.</p>
                 <div class="row">
                   <div class="col-md-12 mb-3">
-                    <img class="img-fluid rounded" src="assets/img/lab3/TODO_tof_plot.png" alt="TODO: ToF distance vs time plot">
+                    <img class="img-fluid rounded" src="assets/img/lab3/lab3_9.png" alt="ToF vs Time">
                   </div>
                 </div>
 
@@ -1231,7 +1254,7 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
                 <p><strong>TODO:</strong> Insert your IMU plot image(s) here (raw accel/gyro and/or pitch/roll).</p>
                 <div class="row">
                   <div class="col-md-12 mb-3">
-                    <img class="img-fluid rounded" src="assets/img/lab3/TODO_imu_plot.png" alt="TODO: IMU vs time plot">
+                    <img class="img-fluid rounded" src="assets/img/lab3/lab3_10.png" alt="IMU vs Time">
                   </div>
                 </div>
 
@@ -1255,9 +1278,6 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
                 <!-- ===================== -->
                 <hr class="my-4">
                 <h3 class="text-secondary">(5000-level) Additional Tasks</h3>
-                <p>
-                  I did not complete the additional 5000-level tasks yet. Below is the plan I would use to complete them:
-                </p>
 
                 <h5 class="mt-3"><strong>1) Infrared-transmission based sensors: compare a couple types</strong></h5>
                 <ul>
@@ -1265,16 +1285,21 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
                   <li><strong>IR triangulation sensors:</strong> estimate distance from spot position on a detector. Pros: decent short-range distance. Cons: limited range, affected by surface/angle.</li>
                   <li><strong>Time-of-Flight (VL53L1X):</strong> measures time delay of returned photons. Pros: more direct distance measurement and generally better linearity. Cons: can struggle with very dark/angled targets, and has finite ranging time.</li>
                 </ul>
-                <p><strong>TODO (if doing 5000-level):</strong> Add a short comparison table and cite the sensors you chose.</p>
-
+                  
                 <h5 class="mt-3"><strong>2) Sensitivity to colors and textures</strong></h5>
                 <p>
-                  To test sensitivity, I would fix the sensor at a known distance (e.g., 200 mm, 400 mm, 800 mm) and measure repeated readings for targets with:
+                  To test sensitivity, I fixed the sensor at a known distance (e.g., 200 mm, 400 mm, 800 mm) and measured repeated readings for targets with:
                   <strong>white matte</strong>, <strong>black matte</strong>, <strong>glossy</strong>, and <strong>textured</strong> surfaces.
-                  For each surface, I would compute mean error and standard deviation, and then plot error bars vs distance.
+                  For each surface, I computed mean error and standard deviation, and then plotted error bars vs distance. The side ToF measured white and the front ToF measured black, with the white being a more glossy surface and the black being a more textured one. I kept the distances the same. As can be seen, there is, at best, a 10 mm difference between the two, with the white glossy seeming a bit farther away. More controlled environments may be needed, but I did not have enough material to test for difference in texture first, and then difference in color. If I was to do this with more time, I would find white and black duct tape (glossy) and also white and black towels (textured). This would ensure more consistency and accuracy in my measurements.
                 </p>
-                <p><strong>TODO (if doing 5000-level):</strong> Add your test photos + a plot of measurement error vs target type.</p>
-
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab3/lab3_11.png" alt="Black Textured">
+                  </div>
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab3/lab3_12.png" alt="White Glossy">
+                  </div>
+                </div>
               </div>
 
               <button class="btn btn-primary mt-4" href="#" data-dismiss="modal">
