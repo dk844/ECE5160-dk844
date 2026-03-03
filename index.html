@@ -1385,7 +1385,7 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
 
                     <h5 class="mt-3"><strong>Bench supply bring-up + settings</strong></h5>
                     <p>
-                      I initially powered motor VIN from a bench supply to reduce the risk of damage during debugging.
+                      I initially powered motor VIN from a bench supply to reduce the risk of damage during debugging. I actually forgot to take a picture of it, so I will describe what I did. I plugged the the channel 1 oscilloscope to one of the outputs of the Motor Driver, with the ground of the probe to the ground of the board (which was connected to the grounds of the motor drivers). The initial motor driver I tested had inputs into Pins 14 and 13. I ran a PWM signal of 200 through one of the pins, delayed, and then ran a PWM signal of 200 for the other pin. I made sure the Motor Driver was grounded to the board, which was also grounded to the oscilloscope. That, in turn, was also grounded by the DC Power Supply. I used the rightmost(0-5 V DC) to supply the power. I connected the red cable to the Motor Driver's VIN and the black cable to the GND (connected to both the Motor Driver and the Artemis Nano board).
                       Reasonable initial settings were:
                     </p>
                     <ul>
