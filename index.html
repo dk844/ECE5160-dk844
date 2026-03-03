@@ -1336,9 +1336,6 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
                 <div class="divider-custom-line"></div>
               </div>
 
-              <!-- TODO: add an overview photo -->
-              <img class="img-fluid rounded mb-4" src="assets/img/portfolio/TODO_lab4_overview.jpg" alt="Lab 4 Overview Photo (TODO)"/>
-
               <div class="text-left">
 
                 <h3 class="text-secondary">Overview</h3>
@@ -1357,10 +1354,8 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
                   I selected PWM-capable Artemis pins based on (1) physical routing inside the chassis (short, clean wire runs) and (2) minimizing crossing near
                   the motor leads to reduce EMI. I used four control pins total (two per motor direction inputs).
                 </p>
-
-                <!-- TODO: wiring diagram with exact pin numbers -->
-                <p><strong>Diagram (TODO):</strong> Add a wiring diagram showing Artemis pins → motor driver inputs, motor outputs, VM battery, and shared ground.</p>
-                <img class="img-fluid rounded mb-3" src="assets/img/lab4/TODO_wiring_diagram.png" alt="Lab 4 Wiring Diagram (TODO)"/>
+                <p><strong>Wiring Diagram:</strong></p>
+                <img class="img-fluid rounded mb-3" src="assets/img/lab4/wiring_diagram.png" alt="Lab 4 Wiring Diagram"/>
 
                 <h5 class="mt-3"><strong>Why separate batteries?</strong></h5>
                 <p>
@@ -1380,17 +1375,12 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
 
                 <h5 class="mt-3"><strong>Bench supply bring-up + settings</strong></h5>
                 <p>
-                  I initially powered motor VIN from a bench supply with a current limit to reduce the risk of damage during debugging.
+                  I initially powered motor VIN from a bench supply to reduce the risk of damage during debugging.
                   Reasonable initial settings were:
                   <ul>
-                    <li><strong>Voltage:</strong> match the motor battery voltage (TODO: write the value you used)</li>
-                    <li><strong>Current limit:</strong> low enough to protect wiring/driver, but high enough to allow spin-up (TODO: write the value you used)</li>
+                    <li><strong>Voltage:</strong> I matched the approximate motor battery voltage. I chose 3.7 Volts despite it being able to go up to 10 V.</li>
                   </ul>
                 </p>
-
-                <!-- TODO: picture of setup -->
-                <p><strong>Setup photo (TODO):</strong> Bench supply + motor driver + oscilloscope probing PWM/output.</p>
-                <img class="img-fluid rounded mb-3" src="assets/img/lab4/TODO_setup_photo.jpg" alt="Bench supply + scope setup (TODO)"/>
 
                 <h5 class="mt-3"><strong>PWM verification on oscilloscope</strong></h5>
                 <p>
@@ -1398,15 +1388,16 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
                   I tested multiple duty values (e.g., 25%, 50%, 75%) and confirmed the duty cycle changed as expected.
                 </p>
 
-                <!-- TODO: code snippet -->
-                <p><strong>Code snippet (TODO):</strong> Add the short Arduino snippet used to generate PWM for scope measurement.</p>
-                <pre><code>// TODO: paste your minimal analogWrite() test code here
-// analogWriteResolution(8);
-// analogWrite(PWM_PIN, 128);</code></pre>
+                <img class="img-fluid rounded mb-3" src="assets/img/lab4/pwm_test_code.png" alt="PWM Test Code"/>
+                <pre><code>
+    analogWrite(AB1IN_RIGHT, 255);
+    analogWrite(AB2IN_LEFT,  0);
+    analogWrite(AB2IN_RIGHT, 0);
+    analogWrite(AB1IN_LEFT,  0);
+</code></pre>
 
-                <!-- TODO: oscilloscope screenshot -->
-                <p><strong>Oscilloscope screenshot (TODO):</strong> show frequency + duty measurement.</p>
-                <img class="img-fluid rounded mb-3" src="assets/img/lab4/TODO_scope_pwm.png" alt="PWM on oscilloscope (TODO)"/>
+                <p><strong>Oscilloscope screenshot:</strong></p>
+                <img class="img-fluid rounded mb-3" src="assets/img/lab4/setup_photo.png" alt="Bench supply + scope setup"/>
 
                 <h5 class="mt-3"><strong>Motor direction test (wheels elevated)</strong></h5>
                 <p>
@@ -1414,10 +1405,13 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
                   This was done first on the bench supply, and then repeated on battery power.
                 </p>
 
-                <!-- TODO: video -->
-                <p><strong>Video (TODO):</strong> wheels spinning forward and reverse while elevated.</p>
-                <!-- Example: replace with your embed -->
-                <!-- <iframe width="560" height="315" src="TODO_YOUTUBE_LINK" ...></iframe> -->
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab4/wheels_elevated_arduino_code" alt="Wheels Elevated Code">
+                  </div>
+                </div>
+
+             <iframe width="560" height="315" src="https://www.youtube.com/embed/aeZ-ilIcEFY?si=i2XZ6pdNgb8Bpk2x" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
 
                 <h5 class="mt-3"><strong>Battery-powered test + chassis integration</strong></h5>
                 <p>
@@ -1425,9 +1419,8 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
                   I then installed all components inside the chassis, secured wiring, and tested driving on the ground with a safety timeout.
                 </p>
 
-                <!-- TODO: photo -->
-                <p><strong>Integrated chassis photo (TODO):</strong> show both motor drivers, Artemis, batteries, and wire routing.</p>
-                <img class="img-fluid rounded mb-3" src="assets/img/lab4/TODO_chassis_interior.jpg" alt="Chassis interior (TODO)"/>
+                <p><strong>Integrated chassis photo:</strong> shows both motor drivers, Artemis, batteries, and wire routing.</p>
+                <img class="img-fluid rounded mb-3" src="assets/img/lab4/chassis_interior.png" alt="Chassis interior"/>
 
                 <hr class="my-4">
                 <h3 class="text-secondary">(5000-level) Additional Tasks</h3>
@@ -1479,16 +1472,20 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
                   I validated this by driving along a straight reference line (tape) for at least 2 m, starting centered and still overlapping at the end.
                 </p>
 
-                <!-- TODO: calibration evidence -->
-                <p><strong>Calibration video (TODO)</strong> + (optional) screenshot and a short code snippet showing the calibration factor.</p>
-
+                <p><strong>Calibration video</strong> + screenshot and a short code snippet showing the calibration factor.</p>
+                <p>I found that the calibration factor should be 0.7 multiplied by a PWM speed of 200, where the 200 is for the left wheels/motor and the calibration speed of 0.7 multiplied by 200 (which is 140) is for the right wheels/motor. It seemed that when the calibration factor increased, the car went right and when it was decreased, it went left. Below is also a video of my car going in a straight line after the calibration factor and appropriate PWM speed was decided (approximately between 100-200)</p>
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab4/calibration_arduino_code.png" alt="Calibration Arduino Code">
+                  </div>
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab4/calibration_python_code.png" alt="Calibration Python Code">
+                  </div>
+                </div>
                 <h5 class="mt-3"><strong>Open-loop untethered demo</strong></h5>
                 <p>
-                  Finally, I demonstrated open-loop untethered control by driving forward and adding turns, with a safety timeout to prevent runaway.
+                  Finally, I demonstrated open-loop untethered control by driving forward and adding turns, with a safety timeout to prevent runaway. I made it drive forward, then turn left, drive forward, then turn right. Below is an example video.
                 </p>
-
-                <!-- TODO: open-loop demo video -->
-                <p><strong>Open-loop video (TODO)</strong> and a short snippet of the command routine used.</p>
 
               </div>
 
