@@ -1177,10 +1177,13 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
                 <h3 class="text-secondary">Dual ToF + IMU Running in Parallel</h3>
                 <p>
                   After confirming each ToF sensor worked independently, I connected both sensors and ran them in parallel with the IMU.
-                  The main goal was to prove that the Artemis could service both I<sup>2</sup>C sensors (ToF + IMU) in one loop without locking up. I used a FUSED_START_RECORD case for this. After initializing both the IMU and ToF, I made sure that the FUSED is simultaneously taking in the data for both the IMU and the ToF. Below is a video showing how it works.
+                  The main goal was to prove that the Artemis could service both I<sup>2</sup>C sensors (ToF + IMU) in one loop without locking up. I used a FUSED_START_RECORD case for this. After initializing both the IMU and ToF, I made sure that the FUSED is simultaneously taking in the data for both the IMU and the ToF. Below is a video showing how it works. I also showed my setup, as well as how everything has been connected and simulated/tested.
                 </p>
-                <p><strong>TODO:</strong> Insert a short video or screenshot showing both ToF readings updating while the IMU service is also running.</p>
-
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab3/lab3_13.png" alt="Configuration">
+                  </div>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/9hTHBIAvfT4?si=mfNqvcCeD2sYBYY8" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
                 <!-- ===================== -->
                 <!-- Non-blocking loop -->
                 <!-- ===================== -->
