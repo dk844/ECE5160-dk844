@@ -1451,15 +1451,12 @@ analogWrite(AB1IN_LEFT,  0);</code></pre>
                       I measured the PWM frequency produced by <code>analogWrite()</code> on the oscilloscope.
                       <br />
                       <strong>Measured frequency:</strong>
-                      <span style="color: #d9534f;"><strong>TODO_HZ</strong></span>
+                      <span style="color: #d9534f;"><strong>around 190 Hz</strong></span>
                       <br />
-                      This frequency is (TODO: in/near/out of) the audible range. For DC motors, it is generally adequate for speed control because the motor inductance
+                      For DC motors, it is generally adequate for speed control because the motor inductance
                       and mechanical inertia average the PWM. A higher PWM frequency can reduce audible noise and improve smooth low-speed operation, but may increase
-                      switching losses/heating in the driver.
+                      switching losses/heating in the driver. I could see that the motors were basically reacting to the PWM signals that they are receiving. Knowing all this, I can manually configure certain timings so that a faster PWM signal can be sent, which would allow better control of the motor.
                     </p>
-
-                    <p><strong>Scope evidence (TODO):</strong> include a screenshot with frequency measurement.</p>
-                    <img class="img-fluid rounded mb-3" src="assets/img/lab4/TODO_scope_freq.png" alt="PWM frequency measurement (TODO)" />
 
                     <h5 class="mt-3"><strong>2) Start PWM vs sustain PWM (forward + on-axis turn)</strong></h5>
                     <p>
@@ -1470,26 +1467,23 @@ analogWrite(AB1IN_LEFT,  0);</code></pre>
                     <ul>
                       <li>
                         <strong>Forward:</strong> PWM<sub>start</sub> =
-                        <span style="color: #d9534f;"><strong>TODO</strong></span>,
+                        <span style="color: #d9534f;"><strong>30</strong></span>,
                         PWM<sub>sustain</sub> =
-                        <span style="color: #d9534f;"><strong>TODO</strong></span>
+                        <span style="color: #d9534f;"><strong>27</strong></span>
                       </li>
                       <li>
                         <strong>On-axis turn:</strong> PWM<sub>start</sub> =
-                        <span style="color: #d9534f;"><strong>TODO</strong></span>,
+                        <span style="color: #d9534f;"><strong>35</strong></span>,
                         PWM<sub>sustain</sub> =
-                        <span style="color: #d9534f;"><strong>TODO</strong></span>
+                        <span style="color: #d9534f;"><strong>30</strong></span>
                       </li>
                       <li>
                         <strong>Settling time at slowest speed:</strong>
-                        <span style="color: #d9534f;"><strong>TODO_seconds</strong></span>
+                        <span style="color: #d9534f;"><strong>2 seconds</strong></span>
                       </li>
                     </ul>
 
-                    <p><strong>Code snippet (TODO):</strong> paste the short “kick then sustain” helper or the specific section of your motor test routine.</p>
-                    <pre><code>// TODO: paste kick-then-sustain motor test snippet here</code></pre>
-
-                    <p><strong>Video (TODO):</strong> forward at lowest sustained speed, and on-axis turning at lowest sustained speed.</p>
+                    <p>I found the above values to be the minimum PWM needed. I also found that it takes around 2 seconds for the static friction to "settle", thus resulting in steady state motion afterwards. The on-axis turns could've been experimented better, since I may have done it when the battery was almost running out already.</p>
 
                     <hr class="my-4" />
                     <h3 class="text-secondary">Calibration + Open-Loop Driving</h3>
