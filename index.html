@@ -1313,190 +1313,229 @@ theta = alpha*gyro_pred + (1-alpha)*acc_term</code></pre>
     </div>
   </div>
 </div>
-<!-- Portfolio Modal (Lab 4)-->
-<div class="portfolio-modal modal fade" id="portfolioModal3" tabindex="-1" role="dialog" aria-labelledby="#portfolioModal3Label" aria-hidden="true">
-  <div class="modal-dialog modal-xl" role="document">
-    <div class="modal-content">
-      <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-        <span aria-hidden="true"><i class="fas fa-times"></i></span>
-      </button>
+    <!-- ============================= -->
+    <!-- Portfolio Modal (Lab 4) -->
+    <!-- ============================= -->
+    <div
+      class="portfolio-modal modal fade"
+      id="portfolioModal3"
+      tabindex="-1"
+      role="dialog"
+      aria-labelledby="portfolioModal3Label"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+          <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true"><i class="fas fa-times"></i></span>
+          </button>
 
-      <div class="modal-body text-center">
-        <div class="container">
-          <div class="row justify-content-center">
-            <div class="col-lg-10">
+          <div class="modal-body text-center">
+            <div class="container">
+              <div class="row justify-content-center">
+                <div class="col-lg-10">
+                  <h2 class="portfolio-modal-title text-secondary mb-0">
+                    Lab 4: Motor Drivers + PWM Control (Open-Loop)
+                  </h2>
 
-              <!-- Title -->
-              <h2 class="portfolio-modal-title text-secondary mb-0">Lab 4: Motor Drivers + PWM Control (Open-Loop)</h2>
-
-              <!-- Divider -->
-              <div class="divider-custom">
-                <div class="divider-custom-line"></div>
-                <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
-                <div class="divider-custom-line"></div>
-              </div>
-
-              <div class="text-left">
-
-                <h3 class="text-secondary">Overview</h3>
-                <p>
-                  In this lab, I integrated dual motor drivers with the Artemis and the RC chassis to achieve fast, untethered open-loop control.
-                  I used PWM via <code>analogWrite()</code> to control motor power and used the motor driver input logic to control direction.
-                  I first verified PWM behavior on an oscilloscope using a current-limited bench supply, then transitioned to battery power and tested
-                  forward driving, on-axis turns, and straight-line calibration.
-                </p>
-
-                <hr class="my-4">
-                <h3 class="text-secondary">Prelab</h3>
-
-                <h5 class="mt-3"><strong>Planned wiring + pin choices</strong></h5>
-                <p>
-                  I selected PWM-capable Artemis pins based on (1) physical routing inside the chassis (short, clean wire runs) and (2) minimizing crossing near
-                  the motor leads to reduce EMI. I used four control pins total (two per motor direction inputs).
-                </p>
-                <p><strong>Wiring Diagram:</strong></p>
-                <img class="img-fluid rounded mb-3" src="assets/img/lab4/wiring_diagram.png" alt="Lab 4 Wiring Diagram"/>
-
-                <h5 class="mt-3"><strong>Why separate batteries?</strong></h5>
-                <p>
-                  The Artemis and the motors were powered from separate batteries to prevent motor transients (stall current spikes, back-EMF, and supply droop)
-                  from brownout-resetting the microcontroller or injecting noise into the logic supply. Even with separate supplies, I tied grounds together so
-                  the PWM/logic signals have a common reference.
-                </p>
-
-                <h5 class="mt-3"><strong>Parallel-coupling driver channels</strong></h5>
-                <p>
-                  To deliver higher current without overheating, I parallel-coupled the two channels on each dual driver so both outputs share the load for one motor.
-                  Because both channels are on the same IC (shared timing/clocking), this is a common technique to increase usable current capacity.
-                </p>
-
-                <hr class="my-4">
-                <h3 class="text-secondary">Lab Tasks</h3>
-
-                <h5 class="mt-3"><strong>Bench supply bring-up + settings</strong></h5>
-                <p>
-                  I initially powered motor VIN from a bench supply to reduce the risk of damage during debugging.
-                  Reasonable initial settings were:
-                  <ul>
-                    <li><strong>Voltage:</strong> I matched the approximate motor battery voltage. I chose 3.7 Volts despite it being able to go up to 10 V.</li>
-                  </ul>
-                </p>
-
-                <h5 class="mt-3"><strong>PWM verification on oscilloscope</strong></h5>
-                <p>
-                  I used <code>analogWrite()</code> to generate PWM and verified the waveform frequency and duty cycle on the oscilloscope.
-                  I tested multiple duty values (e.g., 25%, 50%, 75%) and confirmed the duty cycle changed as expected.
-                </p>
-
-                <img class="img-fluid rounded mb-3" src="assets/img/lab4/pwm_test_code.png" alt="PWM Test Code"/>
-                <pre><code>
-    analogWrite(AB1IN_RIGHT, 255);
-    analogWrite(AB2IN_LEFT,  0);
-    analogWrite(AB2IN_RIGHT, 0);
-    analogWrite(AB1IN_LEFT,  0);
-</code></pre>
-
-                <p><strong>Oscilloscope screenshot:</strong></p>
-                <img class="img-fluid rounded mb-3" src="assets/img/lab4/setup_photo.png" alt="Bench supply + scope setup"/>
-
-                <h5 class="mt-3"><strong>Motor direction test (wheels elevated)</strong></h5>
-                <p>
-                  With the car on its side (wheels elevated), I confirmed each motor could spin forward and reverse by toggling the input direction pins.
-                  This was done first on the bench supply, and then repeated on battery power.
-                </p>
-
-                <div class="row">
-                  <div class="col-md-12 mb-3">
-                    <img class="img-fluid rounded" src="assets/img/lab4/wheels_elevated_arduino_code" alt="Wheels Elevated Code">
+                  <div class="divider-custom">
+                    <div class="divider-custom-line"></div>
+                    <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+                    <div class="divider-custom-line"></div>
                   </div>
+
+                  <div class="text-left">
+                    <!-- ======= YOUR LAB 4 CONTENT ======= -->
+                    <h3 class="text-secondary">Overview</h3>
+                    <p>
+                      In this lab, I integrated dual motor drivers with the Artemis and the RC chassis to achieve fast, untethered open-loop control.
+                      I used PWM via <code>analogWrite()</code> to control motor power and used the motor driver input logic to control direction.
+                      I first verified PWM behavior on an oscilloscope using a current-limited bench supply, then transitioned to battery power and tested
+                      forward driving, on-axis turns, and straight-line calibration.
+                    </p>
+
+                    <hr class="my-4" />
+                    <h3 class="text-secondary">Prelab</h3>
+
+                    <h5 class="mt-3"><strong>Planned wiring + pin choices</strong></h5>
+                    <p>
+                      I selected PWM-capable Artemis pins based on (1) physical routing inside the chassis (short, clean wire runs) and (2) minimizing crossing near
+                      the motor leads to reduce EMI. I used four control pins total (two per motor direction inputs).
+                    </p>
+
+                    <p><strong>Wiring Diagram:</strong></p>
+                    <img class="img-fluid rounded mb-3" src="assets/img/lab4/wiring_diagram.png" alt="Lab 4 Wiring Diagram" />
+
+                    <h5 class="mt-3"><strong>Why separate batteries?</strong></h5>
+                    <p>
+                      The Artemis and the motors were powered from separate batteries to prevent motor transients (stall current spikes, back-EMF, and supply droop)
+                      from brownout-resetting the microcontroller or injecting noise into the logic supply. Even with separate supplies, I tied grounds together so
+                      the PWM/logic signals have a common reference.
+                    </p>
+
+                    <h5 class="mt-3"><strong>Parallel-coupling driver channels</strong></h5>
+                    <p>
+                      To deliver higher current without overheating, I parallel-coupled the two channels on each dual driver so both outputs share the load for one motor.
+                      Because both channels are on the same IC (shared timing/clocking), this is a common technique to increase usable current capacity.
+                    </p>
+
+                    <hr class="my-4" />
+                    <h3 class="text-secondary">Lab Tasks</h3>
+
+                    <h5 class="mt-3"><strong>Bench supply bring-up + settings</strong></h5>
+                    <p>
+                      I initially powered motor VIN from a bench supply to reduce the risk of damage during debugging.
+                      Reasonable initial settings were:
+                    </p>
+                    <ul>
+                      <li>
+                        <strong>Voltage:</strong> I matched the approximate motor battery voltage. I chose 3.7 Volts despite it being able to go up to 10 V.
+                      </li>
+                    </ul>
+
+                    <h5 class="mt-3"><strong>PWM verification on oscilloscope</strong></h5>
+                    <p>
+                      I used <code>analogWrite()</code> to generate PWM and verified the waveform frequency and duty cycle on the oscilloscope.
+                      I tested multiple duty values (e.g., 25%, 50%, 75%) and confirmed the duty cycle changed as expected.
+                    </p>
+
+                    <img class="img-fluid rounded mb-3" src="assets/img/lab4/pwm_test_code.png" alt="PWM Test Code" />
+
+                    <pre><code>analogWrite(AB1IN_RIGHT, 255);
+analogWrite(AB2IN_LEFT,  0);
+analogWrite(AB2IN_RIGHT, 0);
+analogWrite(AB1IN_LEFT,  0);</code></pre>
+
+                    <p><strong>Oscilloscope / setup screenshot:</strong></p>
+                    <img class="img-fluid rounded mb-3" src="assets/img/lab4/setup_photo.png" alt="Bench supply + scope setup" />
+
+                    <h5 class="mt-3"><strong>Motor direction test (wheels elevated)</strong></h5>
+                    <p>
+                      With the car on its side (wheels elevated), I confirmed each motor could spin forward and reverse by toggling the input direction pins.
+                      This was done first on the bench supply, and then repeated on battery power.
+                    </p>
+
+                    <div class="row">
+                      <div class="col-md-12 mb-3">
+                        <!-- FIXED: add .png (change extension if needed) -->
+                        <img class="img-fluid rounded" src="assets/img/lab4/wheels_elevated_arduino_code.png" alt="Wheels Elevated Code" />
+                      </div>
+                    </div>
+
+                    <iframe
+                      width="560"
+                      height="315"
+                      src="https://www.youtube.com/embed/aeZ-ilIcEFY?si=i2XZ6pdNgb8Bpk2x"
+                      title="YouTube video player"
+                      frameborder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      referrerpolicy="strict-origin-when-cross-origin"
+                      allowfullscreen
+                    ></iframe>
+
+                    <h5 class="mt-3"><strong>Battery-powered test + chassis integration</strong></h5>
+                    <p>
+                      After validating PWM/direction, I powered motor VIN from the 850 mAh battery and confirmed behavior remained consistent.
+                      I then installed all components inside the chassis, secured wiring, and tested driving on the ground with a safety timeout.
+                    </p>
+
+                    <p><strong>Integrated chassis photo:</strong> shows both motor drivers, Artemis, batteries, and wire routing.</p>
+                    <img class="img-fluid rounded mb-3" src="assets/img/lab4/chassis_interior.png" alt="Chassis interior" />
+
+                    <hr class="my-4" />
+                    <h3 class="text-secondary">(5000-level) Additional Tasks</h3>
+
+                    <h5 class="mt-3"><strong>1) Measured analogWrite() PWM frequency</strong></h5>
+                    <p>
+                      I measured the PWM frequency produced by <code>analogWrite()</code> on the oscilloscope.
+                      <br />
+                      <strong>Measured frequency:</strong>
+                      <span style="color: #d9534f;"><strong>TODO_HZ</strong></span>
+                      <br />
+                      This frequency is (TODO: in/near/out of) the audible range. For DC motors, it is generally adequate for speed control because the motor inductance
+                      and mechanical inertia average the PWM. A higher PWM frequency can reduce audible noise and improve smooth low-speed operation, but may increase
+                      switching losses/heating in the driver.
+                    </p>
+
+                    <p><strong>Scope evidence (TODO):</strong> include a screenshot with frequency measurement.</p>
+                    <img class="img-fluid rounded mb-3" src="assets/img/lab4/TODO_scope_freq.png" alt="PWM frequency measurement (TODO)" />
+
+                    <h5 class="mt-3"><strong>2) Start PWM vs sustain PWM (forward + on-axis turn)</strong></h5>
+                    <p>
+                      I experimentally measured the minimum PWM needed to (a) start motion from rest (overcome static friction) and (b) maintain motion once already moving.
+                      I used a “kick then sustain” method: apply a brief higher PWM to start, then drop to the lowest PWM that maintains motion.
+                    </p>
+
+                    <ul>
+                      <li>
+                        <strong>Forward:</strong> PWM<sub>start</sub> =
+                        <span style="color: #d9534f;"><strong>TODO</strong></span>,
+                        PWM<sub>sustain</sub> =
+                        <span style="color: #d9534f;"><strong>TODO</strong></span>
+                      </li>
+                      <li>
+                        <strong>On-axis turn:</strong> PWM<sub>start</sub> =
+                        <span style="color: #d9534f;"><strong>TODO</strong></span>,
+                        PWM<sub>sustain</sub> =
+                        <span style="color: #d9534f;"><strong>TODO</strong></span>
+                      </li>
+                      <li>
+                        <strong>Settling time at slowest speed:</strong>
+                        <span style="color: #d9534f;"><strong>TODO_seconds</strong></span>
+                      </li>
+                    </ul>
+
+                    <p><strong>Code snippet (TODO):</strong> paste the short “kick then sustain” helper or the specific section of your motor test routine.</p>
+                    <pre><code>// TODO: paste kick-then-sustain motor test snippet here</code></pre>
+
+                    <p><strong>Video (TODO):</strong> forward at lowest sustained speed, and on-axis turning at lowest sustained speed.</p>
+
+                    <hr class="my-4" />
+                    <h3 class="text-secondary">Calibration + Open-Loop Driving</h3>
+
+                    <h5 class="mt-3"><strong>Straight-line calibration factor</strong></h5>
+                    <p>
+                      If the motors did not spin at the same effective speed, I applied a calibration factor to one motor’s PWM so the robot drove straighter.
+                      I validated this by driving along a straight reference line (tape) for at least 2 m, starting centered and still overlapping at the end.
+                    </p>
+
+                    <p>
+                      I found that the calibration factor should be 0.7 multiplied by a PWM speed of 200, where the 200 is for the left wheels/motor and the
+                      calibration speed of 0.7 multiplied by 200 (which is 140) is for the right wheels/motor.
+                    </p>
+
+                    <div class="row">
+                      <div class="col-md-12 mb-3">
+                        <img class="img-fluid rounded" src="assets/img/lab4/calibration_arduino_code.png" alt="Calibration Arduino Code" />
+                      </div>
+                      <div class="col-md-12 mb-3">
+                        <img class="img-fluid rounded" src="assets/img/lab4/calibration_python_code.png" alt="Calibration Python Code" />
+                      </div>
+                    </div>
+
+                    <h5 class="mt-3"><strong>Open-loop untethered demo</strong></h5>
+                    <p>
+                      Finally, I demonstrated open-loop untethered control by driving forward and adding turns, with a safety timeout to prevent runaway.
+                      I made it drive forward, then turn left, drive forward, then turn right. Below is an example video.
+                    </p>
+
+                    <!-- TODO: add your open-loop video iframe -->
+                    <p><strong>TODO:</strong> Embed your open-loop demo video here.</p>
+                  </div>
+
+                  <button class="btn btn-primary mt-4" href="#" data-dismiss="modal">
+                    <i class="fas fa-times fa-fw"></i>Close Window
+                  </button>
                 </div>
-
-             <iframe width="560" height="315" src="https://www.youtube.com/embed/aeZ-ilIcEFY?si=i2XZ6pdNgb8Bpk2x" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
-
-                <h5 class="mt-3"><strong>Battery-powered test + chassis integration</strong></h5>
-                <p>
-                  After validating PWM/direction, I powered motor VIN from the 850 mAh battery and confirmed behavior remained consistent.
-                  I then installed all components inside the chassis, secured wiring, and tested driving on the ground with a safety timeout.
-                </p>
-
-                <p><strong>Integrated chassis photo:</strong> shows both motor drivers, Artemis, batteries, and wire routing.</p>
-                <img class="img-fluid rounded mb-3" src="assets/img/lab4/chassis_interior.png" alt="Chassis interior"/>
-
-                <hr class="my-4">
-                <h3 class="text-secondary">(5000-level) Additional Tasks</h3>
-
-                <h5 class="mt-3"><strong>1) Measured analogWrite() PWM frequency</strong></h5>
-                <p>
-                  I measured the PWM frequency produced by <code>analogWrite()</code> on the oscilloscope.
-                  <br>
-                  <strong>Measured frequency:</strong> <span style="color:#d9534f;"><strong>TODO_HZ</strong></span>
-                  <br>
-                  This frequency is (TODO: in/near/out of) the audible range. For DC motors, it is generally adequate for speed control because the motor inductance
-                  and mechanical inertia average the PWM. A higher PWM frequency can reduce audible noise and improve smooth low-speed operation, but may increase
-                  switching losses/heating in the driver.
-                </p>
-
-                <!-- TODO: optional extra scope shot -->
-                <p><strong>Scope evidence (TODO):</strong> include a screenshot with frequency measurement.</p>
-                <img class="img-fluid rounded mb-3" src="assets/img/lab4/TODO_scope_freq.png" alt="PWM frequency measurement (TODO)"/>
-
-                <h5 class="mt-3"><strong>2) Start PWM vs sustain PWM (forward + on-axis turn)</strong></h5>
-                <p>
-                  I experimentally measured the minimum PWM needed to (a) start motion from rest (overcome static friction) and (b) maintain motion once already moving.
-                  I used a “kick then sustain” method: apply a brief higher PWM to start, then drop to the lowest PWM that maintains motion.
-                </p>
-
-                <ul>
-                  <li><strong>Forward:</strong> PWM<sub>start</sub> = <span style="color:#d9534f;"><strong>TODO</strong></span>,
-                    PWM<sub>sustain</sub> = <span style="color:#d9534f;"><strong>TODO</strong></span></li>
-                  <li><strong>On-axis turn:</strong> PWM<sub>start</sub> = <span style="color:#d9534f;"><strong>TODO</strong></span>,
-                    PWM<sub>sustain</sub> = <span style="color:#d9534f;"><strong>TODO</strong></span></li>
-                  <li><strong>Settling time at slowest speed:</strong> <span style="color:#d9534f;"><strong>TODO_seconds</strong></span></li>
-                </ul>
-
-                <!-- TODO: code snippet -->
-                <p><strong>Code snippet (TODO):</strong> paste the short “kick then sustain” helper or the specific section of your motor test routine.</p>
-                <pre><code>// TODO: paste kick-then-sustain motor test snippet here</code></pre>
-
-                <!-- TODO: videos -->
-                <p><strong>Video (TODO):</strong> forward at lowest sustained speed, and on-axis turning at lowest sustained speed.</p>
-                <!-- <iframe width="560" height="315" src="TODO_YOUTUBE_LINK_FORWARD" ...></iframe> -->
-                <!-- <iframe width="560" height="315" src="TODO_YOUTUBE_LINK_TURN" ...></iframe> -->
-
-                <hr class="my-4">
-                <h3 class="text-secondary">Calibration + Open-Loop Driving</h3>
-
-                <h5 class="mt-3"><strong>Straight-line calibration factor</strong></h5>
-                <p>
-                  If the motors did not spin at the same effective speed, I applied a calibration factor to one motor’s PWM so the robot drove straighter.
-                  I validated this by driving along a straight reference line (tape) for at least 2 m, starting centered and still overlapping at the end.
-                </p>
-
-                <p><strong>Calibration video</strong> + screenshot and a short code snippet showing the calibration factor.</p>
-                <p>I found that the calibration factor should be 0.7 multiplied by a PWM speed of 200, where the 200 is for the left wheels/motor and the calibration speed of 0.7 multiplied by 200 (which is 140) is for the right wheels/motor. It seemed that when the calibration factor increased, the car went right and when it was decreased, it went left. Below is also a video of my car going in a straight line after the calibration factor and appropriate PWM speed was decided (approximately between 100-200)</p>
-                <div class="row">
-                  <div class="col-md-12 mb-3">
-                    <img class="img-fluid rounded" src="assets/img/lab4/calibration_arduino_code.png" alt="Calibration Arduino Code">
-                  </div>
-                  <div class="col-md-12 mb-3">
-                    <img class="img-fluid rounded" src="assets/img/lab4/calibration_python_code.png" alt="Calibration Python Code">
-                  </div>
-                </div>
-                <h5 class="mt-3"><strong>Open-loop untethered demo</strong></h5>
-                <p>
-                  Finally, I demonstrated open-loop untethered control by driving forward and adding turns, with a safety timeout to prevent runaway. I made it drive forward, then turn left, drive forward, then turn right. Below is an example video.
-                </p>
-
               </div>
-
-              <button class="btn btn-primary mt-4" href="#" data-dismiss="modal">
-                <i class="fas fa-times fa-fw"></i>Close Window
-              </button>
-
             </div>
           </div>
+
         </div>
       </div>
+    </div>
+
+
         <div class="portfolio-modal modal fade" id="portfolioModal4" tabindex="-1" role="dialog" aria-labelledby="#portfolioModal4Label" aria-hidden="true">
             <div class="modal-dialog modal-xl" role="document">
                 <div class="modal-content">
