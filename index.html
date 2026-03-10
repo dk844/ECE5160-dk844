@@ -1536,33 +1536,159 @@ analogWrite(AB1IN_LEFT,  0);</code></pre>
     </div>
 
 
-        <div class="portfolio-modal modal fade" id="portfolioModal4" tabindex="-1" role="dialog" aria-labelledby="#portfolioModal4Label" aria-hidden="true">
-            <div class="modal-dialog modal-xl" role="document">
-                <div class="modal-content">
-                    <button class="close" type="button" data-dismiss="modal" aria-label="Close"><span aria-hidden="true"><i class="fas fa-times"></i></span></button>
-                    <div class="modal-body text-center">
-                        <div class="container">
-                            <div class="row justify-content-center">
-                                <div class="col-lg-8">
-                                    <!-- Portfolio Modal - Title-->
-                                    <h2 class="portfolio-modal-title text-secondary mb-0">Locked Safe</h2>
-                                    <!-- Icon Divider-->
-                                    <div class="divider-custom">
-                                        <div class="divider-custom-line"></div>
-                                        <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
-                                        <div class="divider-custom-line"></div>
-                                    </div>
-                                    <!-- Portfolio Modal - Image--><img class="img-fluid rounded mb-5" src="assets/img/portfolio/safe.png" alt="Locked Safe"/>
-                                    <!-- Portfolio Modal - Text-->
-                                    <p class="mb-5">Lorem ipsum dolor sit amet, consectetur adipisicing elit.Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam.</p>
-                                    <button class="btn btn-primary" href="#" data-dismiss="modal"><i class="fas fa-times fa-fw"></i>Close Window</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+<!-- Portfolio Modal (Lab 5) -->
+<div class="portfolio-modal modal fade" id="portfolioModal4" tabindex="-1" role="dialog" aria-labelledby="portfolioModal4Label" aria-hidden="true">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true"><i class="fas fa-times"></i></span>
+      </button>
+
+      <div class="modal-body text-center">
+        <div class="container">
+          <div class="row justify-content-center">
+            <div class="col-lg-10">
+
+              <h2 class="portfolio-modal-title text-secondary mb-0">Lab 5: Linear PID Control and Linear Extrapolation</h2>
+
+              <div class="divider-custom">
+                <div class="divider-custom-line"></div>
+                <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+                <div class="divider-custom-line"></div>
+              </div>
+
+              <img class="img-fluid rounded mb-4" src="assets/img/portfolio/lab5.png" alt="Lab 5 overview"/>
+
+              <div class="text-left">
+
+                <h3 class="text-secondary">Overview</h3>
+                <p>
+                  In this lab, I implemented closed-loop position control so the robot could drive toward a wall and stop at a target distance of 1 ft (304 mm) using the front ToF sensor. I used a PID controller with Bluetooth-triggered execution, on-board logging, motor deadband compensation, a crash guard, and a settling routine that lets the robot move forward and backward near the setpoint instead of only coasting. I also implemented linear extrapolation so the controller could run much faster than the ToF update rate.
+                </p>
+
+                <hr class="my-4">
+                <h3 class="text-secondary">Prelab / BLE Debugging Strategy</h3>
+                <p>
+                  I used the BLE framework from earlier labs so the Artemis starts a PID run only when commanded from Python. During each run, the robot stores time stamps, raw ToF, extrapolated ToF, controller terms, and signed PWM in arrays. After the run completes, the data is sent back over BLE in chunks and plotted in Jupyter. This made gain tuning much faster because I could change gains over BLE without reflashing.
+                </p>
+
+<pre><code>// representative control structure
+if (new_tof) ctrl_mm = raw_mm;
+else         ctrl_mm = tof_extrapolate(now_us);
+
+err = ctrl_mm - pid_setpoint_mm;
+u   = Kp*err + Ki*i_term;
+pwm = apply_deadband_and_clamp(u);
+</code></pre>
+
+                <hr class="my-4">
+                <h3 class="text-secondary">Position Control</h3>
+                <p>
+                  I chose a PI controller because proportional control alone was fast but left a steady-state error, while derivative control was not necessary for this task and would have amplified ToF noise. A representative gain set for the plotted trials was <strong>Kp = 0.12, Ki = 0.05, Kd = 0</strong>. I also added motor deadband compensation so small controller outputs were mapped to a PWM large enough to overcome static friction.
+                </p>
+                <p>
+                  To improve robustness, I added three practical protections. First, a <strong>crash guard</strong> stops the robot if the raw ToF reading falls below a safety threshold. Second, a <strong>settling mode</strong> switches to gentler bidirectional corrections near the goal so the robot can recover from overshoot. Third, <strong>active braking</strong> is used only for the final stop, while normal zero command uses coasting.
+                </p>
+                <p>
+                  From repeated runs starting roughly 1.5–4 m from the wall, the robot consistently reached the neighborhood of 304 mm without colliding. The raw and estimated ToF curves track closely, and the signed PWM plot shows the controller reversing direction after overshoot, which confirms that the system is actually regulating around the setpoint rather than simply stopping once it gets close.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab5/pid_1a.png" alt="Representative successful PI control trial">
+                  </div>
                 </div>
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/5hM1MrMyprE?si=MLwDuJmo1WN8CrKe" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+            <iframe width="560" height="315" src="https://www.youtube.com/embed/6-ZuHB4PrQA?si=woSnAOOUffAQWPs-" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+                  <iframe width="560" height="315" src="https://www.youtube.com/embed/o4uPyTQjoBo?si=pG8tjFWliJtSBi-E" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+                <hr class="my-4">
+                <h3 class="text-secondary">Sampling Rate and Extrapolation</h3>
+                <p>
+                  A major goal of this lab was to decouple controller rate from sensor rate. In my data, the PID loop ran substantially faster than the ToF sensor. Representative measured rates were about <strong>133–167 Hz</strong> for the PID loop and <strong>18.6–19.4 Hz</strong> for the ToF sensor, so the controller ran about <strong>6.9× to 9.0× faster</strong> than the sensor. This was done by computing control every loop and only updating the measured distance when a fresh ToF sample arrived.
+                </p>
+                <p>
+                  Instead of reusing the last ToF value directly, I extrapolated the current distance from the last two readings:
+                </p>
+
+<pre><code>slope = (d2 - d1) / (t2 - t1)
+d_est = d2 + slope * (now - t2)
+</code></pre>
+
+                <p>
+                  The resulting plots show that the extrapolated estimate closely follows the stepwise raw measurement while remaining smooth between ToF updates. This satisfies the lab requirement that the PID loop run faster than the sensor while still using a current distance estimate.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab5/pid_1b.png" alt="PID loop rate statistics">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab5/pid_1c.png" alt="ToF update rate statistics">
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab5/pid_1d.png" alt="Raw versus extrapolated ToF">
+                  </div>
+                </div>
+                <p>
+                  I have also included a different trial, where the robot was placed much closer than the previous trial, just to show that my PID works for many different instances, not just one distance.
+                </p>
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab5/pid_2.png" alt="Raw versus extrapolated ToF">
+                  </div>
+                </div>
+                  
+                <hr class="my-4">
+                <h3 class="text-secondary">(5000-level) Integrator Wind-up Protection</h3>
+                <p>
+                  Because the robot can begin far from the wall, the controller output may saturate for a long time. Without protection, the integral term can continue accumulating during saturation and then cause a large overshoot once the robot gets near the setpoint. To address this, I added an integral clamp and conditional anti-windup logic. I also added a BLE command so wind-up protection can be turned on and off for comparison.
+                </p>
+                <p>
+                  This protection is necessary because the drivetrain is nonlinear: deadband, floor friction, and battery level all change the relationship between PWM and motion. A pure integrator that keeps growing while the actuator is already saturated stores unnecessary error and makes recovery slower and less repeatable. As can be seen, the overshoot is much more severe, with it also taking longer for it to settle. I added 2 videos comparing the windup on and windup off as well.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab5/pid_3a_windup_on.png" alt="PID loop rate statistics">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab5/pid_4a_windup_off.png" alt="ToF update rate statistics">
+                  </div>
+                </div>
+
+                <iframe width="560" height="315" src="https://www.youtube.com/embed/o4uPyTQjoBo?si=fdQpWAC1qKLdtTad" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+                <iframe width="560" height="315" src="https://www.youtube.com/embed/mFAE53WJjmo?si=Ak3NCPOiPECDAC0K" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+                <hr class="my-4">
+                <h3 class="text-secondary">Discussion</h3>
+                <p>
+                  Overall, the most important practical lessons were that loop timing matters, motor deadband must be handled explicitly, and a reliable controller benefits from simple “hacks” such as crash guards and settling logic. I did not include a derivative term in the final demonstrated controller because the ToF signal is relatively low-rate and noisy compared to the controller loop, so derivative action was more likely to amplify measurement noise than improve performance. The extrapolator, however, provided a clear benefit because it let the control loop run much faster than the sensor without waiting for new data each cycle.
+                </p>
+
+                <p>The maximum linear speed during the wall approach was approximately 0.45 m/s (about 450 mm/s), estimated from the steepest slope of the logged ToF distance-versus-time data. I'm sure it could go a bit faster than this, but that would cause it to overshoot and hit the crash guard at times. This is the most reliable speed I have seen thus far.</p>
+
+              </div>
+
+              <button class="btn btn-primary mt-4" href="#" data-dismiss="modal">
+                <i class="fas fa-times fa-fw"></i>Close Window
+              </button>
+
             </div>
+          </div>
         </div>
+      </div>
+
+    </div>
+  </div>
+</div>
         <div class="portfolio-modal modal fade" id="portfolioModal5" tabindex="-1" role="dialog" aria-labelledby="#portfolioModal5Label" aria-hidden="true">
             <div class="modal-dialog modal-xl" role="document">
                 <div class="modal-content">
