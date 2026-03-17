@@ -1687,33 +1687,228 @@ d_est = d2 + slope * (now - t2)
     </div>
   </div>
 </div>
-        <div class="portfolio-modal modal fade" id="portfolioModal5" tabindex="-1" role="dialog" aria-labelledby="#portfolioModal5Label" aria-hidden="true">
-            <div class="modal-dialog modal-xl" role="document">
-                <div class="modal-content">
-                    <button class="close" type="button" data-dismiss="modal" aria-label="Close"><span aria-hidden="true"><i class="fas fa-times"></i></span></button>
-                    <div class="modal-body text-center">
-                        <div class="container">
-                            <div class="row justify-content-center">
-                                <div class="col-lg-8">
-                                    <!-- Portfolio Modal - Title-->
-                                    <h2 class="portfolio-modal-title text-secondary mb-0">Submarine</h2>
-                                    <!-- Icon Divider-->
-                                    <div class="divider-custom">
-                                        <div class="divider-custom-line"></div>
-                                        <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
-                                        <div class="divider-custom-line"></div>
-                                    </div>
-                                    <!-- Portfolio Modal - Image--><img class="img-fluid rounded mb-5" src="assets/img/portfolio/submarine.png" alt="Submarine"/>
-                                    <!-- Portfolio Modal - Text-->
-                                    <p class="mb-5">Lorem ipsum dolor sit amet, consectetur adipisicing elit.Mollitia neque assumenda ipsam nihil, molestias magnam, recusandae quos quis inventore quisquam velit asperiores, vitae? Reprehenderit soluta, eos quod consequuntur itaque. Nam.</p>
-                                    <button class="btn btn-primary" href="#" data-dismiss="modal"><i class="fas fa-times fa-fw"></i>Close Window</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+<!-- Portfolio Modal (Lab 6) -->
+<div class="portfolio-modal modal fade" id="portfolioModal5" tabindex="-1" role="dialog" aria-labelledby="#portfolioModal5Label" aria-hidden="true">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true"><i class="fas fa-times"></i></span>
+      </button>
+
+      <div class="modal-body text-center">
+        <div class="container">
+          <div class="row justify-content-center">
+            <div class="col-lg-10">
+
+              <h2 class="portfolio-modal-title text-secondary mb-0">Lab 6: Orientation Control</h2>
+
+              <div class="divider-custom">
+                <div class="divider-custom-line"></div>
+                <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+                <div class="divider-custom-line"></div>
+              </div>
+
+              <img class="img-fluid rounded mb-4" src="assets/img/portfolio/submarine.png" alt="Lab 6 Overview"/>
+
+              <div class="text-left">
+
+                <!-- ===================== -->
+                <!-- Overview -->
+                <!-- ===================== -->
+                <h3 class="text-secondary">Overview</h3>
+                <p>
+                  In this lab, I implemented closed-loop <strong>yaw orientation control</strong> for the robot using the IMU.
+                  Unlike Lab 5, where the control objective was linear distance to a wall, this lab required the robot to rotate
+                  in place to a commanded heading. I used the gyroscope z-axis measurement from the ICM-20948, estimated yaw by
+                  integrating angular rate over time, and applied a feedback controller that commands the left and right wheels
+                  with equal magnitude and opposite direction so the robot turns in place.
+                </p>
+                <p>
+                  My final controller used a <strong>PI structure</strong> with wind-up protection enabled. For the run shown here,
+                  I used gains of <strong>Kp = 3.3</strong>, <strong>Ki = 0.08</strong>, and <strong>Kd = 0</strong>, with a setpoint of whatever I want to choose. For the sake of the experiment, and how easy it is for eye-testing, I chose both 90 and -90 degrees, among other angles just to test if it worked. Videos of all my runs are shown below. The controller successfully rotated the robot to the target angle with a small overshoot
+                  and then settled near the setpoint.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Prelab -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Prelab / BLE Command Structure</h3>
+                <p>
+                  As in the previous labs, I used a BLE-based workflow so that I could start controller runs, change gains, calibrate
+                  the IMU bias, and dump logged data without reflashing the Artemis each time. This was especially important for this lab
+                  because orientation controllers need repeated tuning, and it is much faster to adjust parameters from Jupyter than to
+                  recompile and upload after every test.
+                </p>
+                <p>
+                  On the Arduino side, I added a dedicated group of yaw-control commands:
+                  <code>YAW_CALIBRATE_BIAS</code>, <code>YAW_SET_GAINS</code>, <code>YAW_SET_SETPOINT</code>,
+                  <code>YAW_START</code>, <code>YAW_STOP</code>, <code>YAW_GET_HEADER</code>, and
+                  <code>YAW_DUMP_NEXT</code>. On the Python side, the notebook sends these commands over BLE, waits for the response,
+                  and then parses the returned data into arrays for plotting.
+                </p>
+
+<pre><code>print(send_and_read(CMD.YAW_CALIBRATE_BIAS, "300", timeout=4.0))
+print(send_and_read(CMD.YAW_SET_GAINS, "3.3|0.08|0.0", timeout=1.0))
+print(send_and_read(CMD.YAW_SET_SETPOINT, "90.0", timeout=1.0))
+print(send_and_read(CMD.YAW_START, "", timeout=1.0))
+</code></pre>
+
+                <p>
+                  I also made the controller non-blocking with respect to Bluetooth. Inside the main loop, the Artemis continuously services BLE,
+                  the IMU, and the yaw controller. Because of this structure, the robot can keep running the controller while still processing
+                  Bluetooth commands and later dumping the recorded data. This is important not only for tuning but also for future labs where
+                  setpoints may need to be changed while the robot is moving.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Yaw estimate -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Yaw Estimate and IMU Considerations</h3>
+                <p>
+                  The yaw estimate was obtained by integrating the gyroscope z-axis angular velocity:
+                </p>
+
+<pre><code>yaw_est_deg = yaw_est_deg + (gz_dps - yaw_bias_dps) * dt
+</code></pre>
+
+                <p>
+                  Before each run, I kept the robot still and estimated the gyroscope bias by averaging 300 samples. This was necessary because
+                  even a small constant bias would accumulate into heading drift over time when integrated digitally. Since yaw is obtained by
+                  integrating gyro rate, any offset in the sensor directly turns into growing angle error. Bias calibration significantly reduced
+                  this drift for the time scale of the controller runs.
+                </p>
+                <p>
+                  One thing to note is that taking the derivative of the yaw error would effectively differentiate a signal that already depends on
+                  an integrated gyro measurement. In practice, I found that derivative action was not needed here. The IMU already gives angular velocity,
+                  and the proportional plus integral terms were enough to achieve the desired turn. Leaving <code>Kd = 0</code> also avoided derivative
+                  kick and reduced sensitivity to noise.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Controller design -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Controller Design</h3>
+                <p>
+                  I implemented a PI yaw controller with optional wind-up protection. The controller error is the wrapped difference between the desired
+                  heading and the estimated heading:
+                </p>
+
+<pre><code>err = wrap_deg(yaw_setpoint_deg - yaw_est_deg)
+u   = yaw_kp * err + yaw_ki * yaw_i_term + yaw_kd * derr
+</code></pre>
+
+                <p>
+                  The wrap function keeps the error in the range of -180 to 180 degrees, which ensures the robot always takes the shortest turning direction.
+                  I also used a small stop band near the target. If the error magnitude is below 2 degrees, the PWM command is set to zero so the robot does
+                  not chatter around the setpoint.
+                </p>
+                <p>
+                  Because the motors have static friction and a deadband, small controller outputs are not strong enough to make the robot turn. To handle this,
+                  I enforced a minimum turn PWM whenever the robot is outside the stop band. In my code, positive turns and negative turns use slightly different
+                  minimum PWM values, which compensates for asymmetry in the drivetrain.
+                </p>
+                <p>
+                  I enabled integrator wind-up protection by clamping the accumulated integral term. This is useful because when the robot begins far from the
+                  setpoint, the controller output can remain saturated for some time. Without clamping, the integral term would continue growing even though the
+                  motors are already at their effective limit, which would produce more overshoot once the robot nears the target.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Results -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Results</h3>
+                <p>
+                  For the trial shown below, the robot started near 0 degrees and was commanded to rotate to approximately 90 degrees
+                  in place. My plotted heading is shown in positive magnitude, thus the response converges to about 90 degrees. The measured angle rose quickly, overshot slightly to about 94 degrees, and then settled
+                  near the commanded setpoint.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab6/lab6_1a_90degrees.png" alt="Yaw angle and setpoint vs time">
+                  </div>
                 </div>
+
+                <p>
+                  The top plot shows the yaw response. The bottom plot shows the signed turn PWM. At the beginning of the maneuver, the controller commands
+                  a large positive PWM to rapidly rotate the robot. As the robot approaches the target, the commanded PWM drops. A short negative pulse appears
+                  after the overshoot, which corresponds to the controller correcting the heading back toward the setpoint. After that, the PWM remains near zero,
+                  indicating that the robot has settled.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab6/lab6_1b_90degrees.png" alt="Gyro z and yaw error vs time">
+                  </div>
+                </div>
+
+                <p>
+                  The gyroscope z-axis plot confirms the turning behavior. The initial large positive angular velocity corresponds to the robot rotating toward
+                  the target, and the negative angular velocity spike corresponds to the correction after overshoot. The yaw error plot drops rapidly from about
+                  90 degrees toward zero, briefly crosses past zero due to overshoot, and then settles close to zero.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-8 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab6/lab6_1c_90degrees.png" alt="Yaw loop timing">
+                  </div>
+                </div>
+
+                <p>
+                  The measured mean controller time step was about <strong>0.00456 s</strong>, corresponding to a control rate of about
+                  <strong>219.3 Hz</strong>. This is fast enough for the orientation control task and is substantially faster than the human-observable
+                  motion of the robot. Running the controller at this rate allowed the robot to respond quickly while still leaving time in the loop for BLE servicing.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Discussion -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Discussion</h3>
+                <p>
+                  The main practical issues in this lab were gyro drift, actuator deadband, and controller saturation. Gyro integration alone is never perfect
+                  because bias causes drift over time, but for the time scale of these turning maneuvers, bias calibration made the integrated yaw estimate accurate
+                  enough to control orientation. The deadband problem was significant because the robot would not turn at all for small PWM values, so adding minimum
+                  turning PWM thresholds was necessary. Saturation also made wind-up protection important, since the controller often begins with a large heading error.
+                </p>
+                <p>
+                  I chose not to use derivative control in the final implementation. Since the gyroscope already measures angular rate directly, the proportional and
+                  integral terms were sufficient to produce a fast response. The final controller achieved the lab goal of stationary orientation control, and the robot
+                  was able to rotate to the commanded heading with only modest overshoot and good settling behavior.
+                </p>
+                <p>
+                  In future labs, this controller can be extended by updating the setpoint in real time during motion, or by combining a forward drive term with the
+                  turn command so the robot can regulate heading while translating. The current BLE-driven structure already supports that kind of extension because
+                  the control loop is non-blocking and can continue processing commands while running.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Videos -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Videos</h3>
+
+                <p><strong>Multiple Tests:</strong>The robot was turned 90 or -90 degrees, with it getting kicked to show PID control.</p>
+
+
+              </div>
+
+              <button class="btn btn-primary mt-4" href="#" data-dismiss="modal">
+                <i class="fas fa-times fa-fw"></i>Close Window
+              </button>
+
             </div>
+          </div>
         </div>
+      </div>
+
+    </div>
+  </div>
+</div>
         <section class="page-section bg-primary text-white mb-0" id="about">
             <div class="container">
                 <!-- About Section Heading-->
