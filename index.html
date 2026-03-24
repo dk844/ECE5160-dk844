@@ -103,6 +103,13 @@
                             </div><img class="img-fluid" src="assets/img/portfolio/lab6_photo.png" alt="Submarine"/>
                         </div>
                     </div>
+                    <div class="col-md-6 col-lg-4 mb-5">
+                        <div class="portfolio-item mx-auto" data-toggle="modal" data-target="#portfolioModal6">
+                            <div class="portfolio-item-caption d-flex align-items-center justify-content-center h-100 w-100">
+                                <div class="portfolio-item-caption-content text-center text-white"><i class="fas fa-plus fa-3x"></i></div>
+                            </div><img class="img-fluid" src="assets/img/portfolio/lab7_photo.png" alt="Lab 7: Kalman Filter"/>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -1913,6 +1920,419 @@ u   = yaw_kp * err + yaw_ki * yaw_i_term + yaw_kd * derr
     </div>
   </div>
 </div>
+<div class="portfolio-modal modal fade" id="portfolioModal6" tabindex="-1" role="dialog" aria-labelledby="#portfolioModal6Label" aria-hidden="true">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true"><i class="fas fa-times"></i></span>
+      </button>
+
+      <div class="modal-body text-center">
+        <div class="container">
+          <div class="row justify-content-center">
+            <div class="col-lg-10">
+
+              <!-- Title -->
+              <h2 class="portfolio-modal-title text-secondary mb-0">Lab 7: Kalman Filter</h2>
+
+              <!-- Divider -->
+              <div class="divider-custom">
+                <div class="divider-custom-line"></div>
+                <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+                <div class="divider-custom-line"></div>
+              </div>
+
+              <img class="img-fluid rounded mb-4" src="assets/img/lab7/lab7_cell20.png" alt="Lab 7 Overview — KF-PID on Robot"/>
+
+              <div class="text-left">
+
+                <!-- ===================== -->
+                <!-- Overview -->
+                <!-- ===================== -->
+                <h3 class="text-secondary">Overview</h3>
+                <p>
+                  In this lab, I implemented a <strong>Kalman Filter</strong> to supplement the slowly sampled ToF distance measurements
+                  used in my Lab 5 PID position controller. The Kalman Filter fuses a dynamics model of the robot with noisy sensor readings
+                  to produce a faster, smoother estimate of the robot's distance from the wall. This allows the control loop to run at a higher
+                  rate than the ToF sensor alone, which is critical for driving toward the wall at higher speeds without crashing.
+                </p>
+                <p>
+                  The lab involved four main steps: (1) performing a step response to estimate the drag and momentum parameters of the robot,
+                  (2) building the state space model and initializing the Kalman Filter in Python, (3) sanity-checking the filter on recorded
+                  data in Jupyter, and (4) implementing the Kalman Filter on the Artemis and integrating it with my existing PID controller.
+                </p>
+
+                <h4 class="text-secondary mt-4">Parts Required</h4>
+                <ul>
+                  <li>1× Fully assembled robot (Artemis, dual ToF sensors, ICM-20948 IMU)</li>
+                  <li>Foam padding against the wall for crash protection</li>
+                </ul>
+
+                <!-- ===================== -->
+                <!-- Step 1: Estimate d and m -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Step 1: Estimate Drag and Momentum</h3>
+
+                <h5 class="mt-3"><strong>Step Response Experiment</strong></h5>
+                <p>
+                  To build the state space model, I needed to estimate the drag coefficient <em>d</em> and the momentum term <em>m</em>.
+                  I did this by driving the robot toward a wall at a constant PWM of <strong>150</strong> (approximately 59% of the maximum)
+                  while logging the front ToF sensor output and the motor input. The step response ran for <strong>4 seconds</strong>, which
+                  was long enough for the robot to accelerate and approach the wall.
+                </p>
+                <p>
+                  I added a dedicated <code>STEP_START</code> BLE command to the Artemis that drives the motors at a constant PWM while
+                  recording time-stamped ToF readings. After the step completes, the data is dumped over BLE and saved to a CSV file so it
+                  persists across kernel restarts.
+                </p>
+
+                <h5 class="mt-3"><strong>Step Response Plots</strong></h5>
+                <p>
+                  The three required plots are shown below: the constant motor input (PWM = 150), the ToF distance over time, and the
+                  computed velocity from finite differences of the ToF readings. The x-axis is in seconds as required.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab7/lab7_cell7.png" alt="Step Response: Motor Input, ToF Distance, Computed Speed">
+                  </div>
+                </div>
+
+                <p>
+                  Looking at the ToF plot, the robot started about 300 mm from the wall, moved away briefly (the front sensor saw increasing
+                  distance as the robot initially moved in the opposite direction relative to the sensor), peaked around 1200 mm near t ≈ 0.9 s,
+                  and then approached the wall rapidly, reaching near 0 mm by t ≈ 2.3 s. The velocity plot shows a large spike around t ≈ 0.9 s
+                  which is a noise artifact from the abrupt ToF jump, not a real speed. The usable descent portion (1200 mm to 0 mm over about
+                  1.3 seconds) gives an approximate steady-state speed.
+                </p>
+
+                <h5 class="mt-3"><strong>Computing d and m</strong></h5>
+                <p>
+                  From the step response data, I estimated the following parameters. Using the lab instructions' formulas with a normalized
+                  unity input (u = 1):
+                </p>
+                <ul>
+                  <li><strong>Steady-state speed:</strong> approximately 900 mm/s (estimated from the slope of the ToF descent)</li>
+                  <li><strong>90% rise time:</strong> approximately 0.8 s</li>
+                </ul>
+                <p>
+                  Using <code>d = u / v_ss = 1/900 ≈ 0.001111</code> and <code>m = −d × t_0.9 / ln(1−0.9) ≈ 0.000386</code>,
+                  I obtained the following:
+                </p>
+
+                <div class="row">
+                  <div class="col-md-8 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab7/lab7_cell8.png" alt="Computed d, m, and tau values">
+                  </div>
+                </div>
+
+                <p>
+                  The time constant τ = m/d ≈ 0.347 s is reasonable for the robot's dynamics at this PWM level. Note that the step response
+                  was not perfectly clean because the robot hit the wall before fully reaching steady state, so these values are approximate.
+                  However, the Kalman Filter is robust to moderate model errors because the covariance tuning compensates for model inaccuracy.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Step 2: Initialize KF in Python -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Step 2: Initialize the Kalman Filter (Python)</h3>
+
+                <h5 class="mt-3"><strong>State Space Model</strong></h5>
+                <p>
+                  The robot's 1D dynamics are modeled as a second-order system with drag:
+                </p>
+
+<pre><code>F = u − d·ẋ
+m·ẍ = u − d·ẋ
+
+State: x̄ = [x, ẋ]ᵀ  (position and velocity)
+
+A = [[0,    1   ],        B = [[0    ],
+     [0,  −d/m  ]]             [1/m  ]]
+
+C = [−1, 0]   (ToF measures negative distance from wall)
+</code></pre>
+
+                <p>
+                  I then discretized the matrices using the Euler method with a sampling time of <strong>dt ≈ 0.0287 s</strong>
+                  (approximately 34.9 Hz, the average ToF sample period from my data):
+                </p>
+
+<pre><code>Ad = I + dt · A
+Bd = dt · B
+</code></pre>
+
+                <div class="row">
+                  <div class="col-md-10 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab7/lab7_cell9.png" alt="State space matrices and discretization">
+                  </div>
+                </div>
+
+                <h5 class="mt-3"><strong>Noise Covariance Matrices</strong></h5>
+                <p>
+                  The Kalman Filter requires specifying how much we trust the model versus the sensor. I set the noise covariances as follows:
+                </p>
+                <ul>
+                  <li>
+                    <strong>Measurement noise (Σ_z):</strong> The ToF sensor has an approximate standard deviation of 20 mm, so
+                    Σ_z = (20)² = <strong>400 mm²</strong>.
+                  </li>
+                  <li>
+                    <strong>Process noise (Σ_u):</strong> Using the lecture guideline of σ = √(10² / dt) for each state, with dt ≈ 0.0287 s,
+                    I obtained σ ≈ 59.1 mm for position and 59.1 mm/s for velocity. This gives
+                    Σ_u = diag(<strong>3489, 3489</strong>).
+                  </li>
+                </ul>
+                <p>
+                  The relative values of Σ_u and Σ_z determine the filter's behavior. Larger process noise means less trust in the model
+                  (the filter follows the sensor more closely), while larger measurement noise means less trust in the sensor (the filter
+                  relies more on the model prediction). I discuss the effect of tuning these in the experiments section below.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-10 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab7/lab7_cell10.png" alt="Noise covariance matrices">
+                  </div>
+                </div>
+
+                <h5 class="mt-3"><strong>KF Function</strong></h5>
+                <p>
+                  I implemented the Kalman Filter using the function provided in the lab instructions, with variable names following the
+                  lecture convention:
+                </p>
+
+<pre><code>def kf(mu, sigma, u, y):
+    # Prediction step
+    mu_p = Ad.dot(mu) + Bd.dot(u)
+    sigma_p = Ad.dot(sigma.dot(Ad.T)) + Sigma_u
+
+    # Update step
+    sigma_m = C.dot(sigma_p.dot(C.T)) + Sigma_z
+    kkf_gain = sigma_p.dot(C.T.dot(np.linalg.inv(sigma_m)))
+
+    y_m = y - C.dot(mu_p)
+    mu = mu_p + kkf_gain.dot(y_m)
+    sigma = (np.eye(2) - kkf_gain.dot(C)).dot(sigma_p)
+
+    return mu, sigma
+</code></pre>
+
+                <!-- ===================== -->
+                <!-- Step 3: Test KF in Jupyter -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Step 3: Implement and Test the KF in Jupyter</h3>
+
+                <h5 class="mt-3"><strong>Running the KF on Step Response Data</strong></h5>
+                <p>
+                  I ran the Kalman Filter on my step response data (140 data points over about 4 seconds) to verify that it produced
+                  reasonable estimates before deploying it on the robot. The initial state was set to the first ToF reading with zero velocity,
+                  and the motor input was scaled by dividing by the step size (255) to normalize it.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab7/lab7_cell12.png" alt="Data points for KF test">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab7/lab7_cell13.png" alt="KF ran on 140 time steps">
+                  </div>
+                </div>
+
+                <h5 class="mt-3"><strong>KF Output vs Raw ToF</strong></h5>
+                <p>
+                  The top plot below shows the KF position estimate (red) overlaid on the raw ToF readings (blue dots). The KF tracks the raw
+                  data closely while providing a smoother trajectory. The bottom plot shows the KF velocity estimate (green), which remains
+                  smooth and physically reasonable even though the finite-difference velocity (blue dots) has extreme spikes due to the noisy
+                  ToF jumps. This demonstrates the key advantage of the Kalman Filter: it produces a smooth, reliable state estimate even from
+                  noisy, slowly-sampled sensor data.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab7/lab7_cell14.png" alt="KF Position Estimate vs Raw ToF and Velocity Estimate">
+                  </div>
+                </div>
+
+                <h5 class="mt-3"><strong>Effect of Noise Covariance Tuning</strong></h5>
+                <p>
+                  To understand how the covariance matrices affect the filter, I ran three experiments:
+                </p>
+                <ul>
+                  <li><strong>Baseline:</strong> The default Σ_u and Σ_z values. The KF closely follows the raw data while smoothing small noise.</li>
+                  <li><strong>10× process noise (less trust in model):</strong> The KF hugs the raw sensor data even more tightly, essentially passing through measurement noise.</li>
+                  <li><strong>10× measurement noise (less trust in sensor):</strong> The KF relies more heavily on the model prediction and is visibly smoother, but may lag behind rapid changes in the real state.</li>
+                </ul>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab7/lab7_cell15.png" alt="Noise comparison: baseline vs high process noise vs high measurement noise">
+                  </div>
+                </div>
+
+                <p>
+                  These experiments confirm the expected behavior from the lecture: the relative balance between Σ_u and Σ_z determines whether
+                  the filter favors the model or the sensor. For my application, the baseline parameters worked well because the model is only
+                  a rough approximation (the step response did not cleanly reach steady state), so I wanted the filter to still rely significantly
+                  on the ToF readings while smoothing the noise between measurements.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Step 4: KF on the Robot -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Step 4: Implement the Kalman Filter on the Robot</h3>
+
+                <h5 class="mt-3"><strong>Arduino Implementation</strong></h5>
+                <p>
+                  I implemented the Kalman Filter on the Artemis using the <code>BasicLinearAlgebra</code> library for matrix operations.
+                  The implementation includes three main functions:
+                </p>
+                <ul>
+                  <li><code>kf_predict(u)</code> — runs the prediction step every control loop iteration using the current motor command</li>
+                  <li><code>kf_update(z)</code> — runs the update step only when a new ToF measurement arrives</li>
+                  <li><code>kf_reset(initial_tof)</code> — initializes the state from the first ToF reading at the start of each PID run</li>
+                </ul>
+
+<pre><code>// Prediction step (runs every loop)
+void kf_predict(float u_normalized) {
+    Matrix&lt;1&gt; u_mat = {u_normalized};
+    kf_state = Ad_kf * kf_state + Bd_kf * u_mat;
+    kf_Sigma = Ad_kf * kf_Sigma * ~Ad_kf + kf_Sigma_u;
+}
+
+// Update step (runs only when new ToF arrives)
+void kf_update(float z_measurement) {
+    // ... compute Kalman gain, innovation, update state and covariance
+}
+</code></pre>
+
+                <p>
+                  I integrated the KF into my existing <code>pid_service()</code> function with a toggle flag <code>kf_enabled</code>.
+                  When the KF is enabled, the controller uses the KF position estimate instead of the linear extrapolation from Lab 5.
+                  The KF parameters (d, m, dt, and noise covariances) are sent from Python over BLE using a <code>KF_SET_PARAMS</code>
+                  command, which allows tuning without reflashing.
+                </p>
+
+                <h5 class="mt-3"><strong>Sending Parameters to the Robot</strong></h5>
+                <p>
+                  I sent the computed d, m, dt, and noise standard deviations from Python to the Artemis:
+                </p>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab7/lab7_cell16.png" alt="KF parameters sent to robot via BLE">
+                  </div>
+                </div>
+
+                <h5 class="mt-3"><strong>KF-PID Results on the Robot</strong></h5>
+                <p>
+                  The plot below shows the KF-PID controller running on the actual robot. The red line is the KF estimate computed on the
+                  Artemis, and the blue dots are the raw ToF readings. The green dashed line is the 304 mm (1 ft) setpoint. The KF estimate
+                  tracks the raw ToF data closely while providing the smooth, continuous estimate that the PID controller uses for its error
+                  computation.
+                </p>
+                <p>
+                  The robot started near the setpoint, moved away (the bump to ~1200 mm around t ≈ 2 s is the same sensor behavior seen in the
+                  step response), and then returned toward the wall, eventually settling near the setpoint by about t ≈ 6 s. The PWM plot shows
+                  the controller commanding forward motion when the robot is far from the wall and then switching to the settling routine near
+                  the setpoint. The brief negative PWM spike near t ≈ 7 s corresponds to the settling controller correcting a small overshoot.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab7/lab7_cell20.png" alt="Lab 7: KF-PID on Robot — Raw vs Estimated Distance and Motor PWM">
+                  </div>
+                </div>
+
+                <p><strong>Video of the KF-PID run:</strong></p>
+<iframe width="560" height="315" src="https://www.youtube.com/embed/Ghk5dFfURns?si=fOvdmeyyEKUw8ggY" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+                <!-- ===================== -->
+                <!-- Parameter Summary -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Parameter Summary</h3>
+                <p>
+                  The final parameter summary for the Kalman Filter implementation:
+                </p>
+
+                <div class="row">
+                  <div class="col-md-10 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab7/lab7_cell21.png" alt="Lab 7 Kalman Filter Parameter Summary">
+                  </div>
+                </div>
+
+                <p>
+                  Key values:
+                </p>
+                <ul>
+                  <li><strong>d</strong> = 0.001111 (drag coefficient)</li>
+                  <li><strong>m</strong> = 0.000386 (momentum coefficient)</li>
+                  <li><strong>τ = m/d</strong> = 0.3474 s (time constant)</li>
+                  <li><strong>dt</strong> = 0.0287 s (discretization time step, ~34.9 Hz ToF rate)</li>
+                  <li><strong>Σ_u</strong> = diag(3489, 3489) (process noise)</li>
+                  <li><strong>Σ_z</strong> = 400 (measurement noise, σ = 20 mm)</li>
+                </ul>
+
+                <!-- ===================== -->
+                <!-- Discussion -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Discussion</h3>
+
+                <p>
+                  The Kalman Filter successfully replaced the linear extrapolation from Lab 5 with a model-based estimator. The main
+                  advantage is that the KF uses a physics-based prediction (incorporating drag and motor input) rather than a simple
+                  linear slope, which means the estimate degrades more gracefully between sensor updates, especially when the robot is
+                  accelerating or decelerating.
+                </p>
+
+                <p>
+                  One challenge I encountered was the sign convention. The state space model uses <code>C = [−1, 0]</code>, meaning the
+                  measurement is the negative of the position state. This caused an initial bug where the KF estimate diverged in the
+                  opposite direction from the raw data, both in the Python sanity check and on the robot. The fix was straightforward:
+                  pass the positive ToF reading directly as the measurement (since the C matrix already handles the sign inversion internally).
+                </p>
+
+                <p>
+                  Another observation is that the step response data was not ideal for system identification. The robot hit the wall before
+                  reaching a clear steady-state speed, so the estimated d and m are approximate. Despite this, the Kalman Filter performed
+                  well because the covariance tuning compensates for model inaccuracy. When the model is wrong, the Kalman gain automatically
+                  increases its trust in the sensor measurements. This is one of the practical strengths of the KF framework: it does not
+                  require a perfect model to produce useful estimates.
+                </p>
+
+                <p>
+                  The noise comparison experiments confirmed the theoretical prediction from the lectures: increasing process noise
+                  makes the filter track the sensor more closely, while increasing measurement noise makes it smoother but more reliant on
+                  the model. For my robot, the baseline parameters provided a good balance, keeping the estimate close to the raw ToF while
+                  filling in between the ~35 Hz sensor updates with model-based prediction.
+                </p>
+
+                <p>
+                  For future work (Lab 8), this KF infrastructure enables running the PID controller at a much higher effective rate, since
+                  the KF can predict the robot's state between ToF measurements. This should allow driving toward the wall at higher speeds
+                  while still maintaining control authority to stop at the setpoint.
+                </p>
+
+              </div>
+
+              <button class="btn btn-primary mt-4" href="#" data-dismiss="modal">
+                <i class="fas fa-times fa-fw"></i>Close Window
+              </button>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
         <section class="page-section bg-primary text-white mb-0" id="about">
             <div class="container">
                 <!-- About Section Heading-->
