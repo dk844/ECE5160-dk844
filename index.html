@@ -2333,6 +2333,373 @@ void kf_update(float z_measurement) {
   </div>
 </div>
 
+<!-- Portfolio Modal (Lab 8) -->
+<div class="portfolio-modal modal fade" id="portfolioModal7" tabindex="-1" role="dialog" aria-labelledby="#portfolioModal7Label" aria-hidden="true">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true"><i class="fas fa-times"></i></span>
+      </button>
+
+      <div class="modal-body text-center">
+        <div class="container">
+          <div class="row justify-content-center">
+            <div class="col-lg-10">
+
+              <!-- Title -->
+              <h2 class="portfolio-modal-title text-secondary mb-0">Lab 8: Stunts (Task B &mdash; Drift)</h2>
+
+              <!-- Divider -->
+              <div class="divider-custom">
+                <div class="divider-custom-line"></div>
+                <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+                <div class="divider-custom-line"></div>
+              </div>
+
+              <img class="img-fluid rounded mb-4" src="assets/img/lab8/lab8_drift_stunt.png" alt="Lab 8 Overview &mdash; Drift Stunt"/>
+
+              <div class="text-left">
+
+                <!-- ===================== -->
+                <!-- Overview -->
+                <!-- ===================== -->
+                <h3 class="text-secondary">Overview</h3>
+                <p>
+                  In this lab, I combined everything from the previous labs into a single fast stunt. I chose <strong>Task B (Drift)</strong>:
+                  the robot starts at the line, drives forward at full speed, and as soon as it gets within about 3 ft of the wall it has to
+                  perform a 180&deg; turn and then drive back past the starting line. The stunt is judged on how quickly the robot makes it
+                  back across the line, so the goal was to spend as little time as possible braking, turning, and re-accelerating.
+                </p>
+                <p>
+                  My final solution is a three-phase state machine driven by a non-blocking <code>drift_service()</code> on the Artemis:
+                  an open-loop full-speed <strong>APPROACH</strong>, a yaw-PID <strong>TURNING</strong> phase that reuses my Lab 6 controller,
+                  and a full-speed <strong>RETURN</strong>. The whole thing is started from a single BLE command and dumps time-stamped sensor,
+                  motor, and yaw data back to my Jupyter notebook for plotting. The total stunt time for the run shown below was
+                  <strong>5.41 s</strong>, with the turn itself taking only <strong>1.29 s</strong>.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Strategy -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Strategy</h3>
+                <p>
+                  The lab instructions explicitly say that the position PID should be <em>disengaged</em> for the approach so the robot does not
+                  slow down on its own. My controller from Lab 5 is great at gently parking 1 ft from a wall, but that is exactly the wrong behavior
+                  for a stunt where I want the robot to slam toward the wall and only stop when it is time to turn. So my approach was:
+                </p>
+                <ol>
+                  <li><strong>APPROACH:</strong> drive forward at PWM 255 with no feedback control. Just wait for the front ToF to drop below a tuned threshold.</li>
+                  <li><strong>TURNING:</strong> active-brake briefly, then hand off to my Lab 6 yaw PID with a heading setpoint, and wait until the yaw error stays inside a small band for a short hold time.</li>
+                  <li><strong>RETURN:</strong> drive forward at full speed (which is now away from the wall) for a fixed duration so the robot crosses the start line.</li>
+                </ol>
+                <p>
+                  Each phase logs the raw ToF, the estimated distance, the gyro-integrated yaw, the motor PWM, and the current phase index, so
+                  every transition is visible in the post-run plot.
+                </p>
+
+                <!-- ===================== -->
+                <!-- State Machine -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">State Machine on the Artemis</h3>
+                <p>
+                  I added a new <code>drift_service()</code> that runs every loop iteration alongside <code>tof_service()</code>, <code>imu_service()</code>,
+                  <code>pid_service()</code>, and <code>yaw_service()</code>. It is the only function that owns the motors during a stunt run, and it
+                  hands control to the yaw PID only during the TURNING phase. A new BLE command, <code>DRIFT_START</code>, configures the four tunable
+                  parameters from Python:
+                </p>
+
+<pre><code>// BLE arguments: drive_pwm | threshold_mm | turn_pwm | duration_ms
+case DRIFT_START:
+{
+    int dpwm = 255;
+    float thresh = 914.0f;
+    int  tpwm = 220;
+    int  dur_ms = 15000;
+    robot_cmd.get_next_value(dpwm);
+    robot_cmd.get_next_value(thresh);
+    robot_cmd.get_next_value(tpwm);
+    robot_cmd.get_next_value(dur_ms);
+    // ... safety checks (ToF init, IMU init, yaw bias valid) ...
+    drift_reset_state();
+    drift_start_ms = millis();
+    drift_phase = DRIFT_APPROACH;
+    drift_running = true;
+    break;
+}
+</code></pre>
+
+                <p>
+                  Inside <code>drift_service()</code>, the three phases each have their own block in a <code>switch</code>:
+                </p>
+
+<pre><code>switch (drift_phase) {
+    case DRIFT_APPROACH:
+        // open loop, full speed
+        analogWrite(AB2IN_RIGHT, (int)(motor_cal * drift_drive_pwm));
+        analogWrite(AB1IN_LEFT,  drift_drive_pwm);
+        // ... ignore threshold for first ~1 s while ToF settles ...
+        if (raw_mm > 0 && raw_mm &lt; drift_threshold_mm) {
+            // hand off to Lab 6 yaw PID
+            yaw_setpoint_deg = 180.0f;     
+            yaw_reset_state();
+            yaw_running = true;
+            drift_phase = DRIFT_TURNING;
+        }
+        break;
+
+    case DRIFT_TURNING:
+        // yaw_service() owns the motors here
+        if (fabs(wrap_deg(yaw_setpoint_deg - yaw_est_deg)) &lt; drift_turn_settle_deg) {
+            // hold the band for drift_turn_settle_ms before transitioning
+            // ...
+            yaw_running = false;
+            drift_phase = DRIFT_RETURN;
+            drift_return_start_ms = millis();
+        }
+        break;
+
+    case DRIFT_RETURN:
+        analogWrite(AB2IN_RIGHT, (int)(motor_cal * drift_return_pwm));
+        analogWrite(AB1IN_LEFT,  drift_return_pwm);
+        if (millis() - drift_return_start_ms &gt;= drift_return_ms) {
+            motors_stop();
+            drift_running = false;
+            drift_phase = DRIFT_DONE;
+        }
+        break;
+}
+</code></pre>
+
+                <p>
+                  All three phases call <code>drift_log()</code>, which appends a row of <code>(t_us, tof_raw, tof_est, yaw, motor_pwm, phase)</code>.
+                  After the run, Python pulls those rows in chunks via <code>DRIFT_DUMP_NEXT</code> and turns them into the plots below.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Beating ToF latency -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Beating ToF Latency During the Approach</h3>
+                <p>
+                  At full PWM the robot covers a lot of ground between ToF samples. The front sensor runs with a 50 ms timing budget, so at
+                  roughly 1.5 m/s that is about 75 mm of motion per reading. My first naive version triggered the turn at exactly 914 mm and it
+                  crashed into the wall every time, because by the time the controller saw &ldquo;below threshold&rdquo; the robot was already
+                  much closer. There were three things I had to do to fix this:
+                </p>
+                <ol>
+                  <li>
+                    <strong>Trigger early.</strong> Instead of 914 mm, I tuned the threshold up to <strong>1300 mm</strong>. The trigger distance and
+                    the actual stop distance are not the same number &mdash; the trigger has to account for sensor latency plus braking distance.
+                    1300 mm worked reliably, and you can see in the close-up plot that the robot actually crosses 914 mm just before its motors finish
+                    reversing.
+                  </li>
+                  <li>
+                    <strong>Hard active brake on entry to TURNING.</strong> Inside my <code>motors_stop()</code> I drive all four motor pins HIGH for
+                    about 80 ms before releasing. Coast-stopping at 255 PWM was way too slow.
+                  </li>
+                  <li>
+                    <strong>Ignore the first 1 s of ToF.</strong> The very first few readings out of <code>tof_service()</code> can be 0 or garbage,
+                    which would otherwise instantly trigger the turn at <em>t</em> = 0. I added a <code>drift_tof_settle_ms = 1000</code> grace
+                    period before the threshold check is allowed to fire. You can see this very clearly in the main plot &mdash; ToF reads 0 until
+                    about <em>t</em> = 1.2 s and then jumps up to ~2200 mm once the sensor stabilizes.
+                  </li>
+                </ol>
+
+                <!-- ===================== -->
+                <!-- Yaw PID rebuild -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Fixing the Yaw PID for a Real Turn</h3>
+                <p>
+                  The yaw PID I had from Lab 6 was never really tuned for a fast 180&deg;. When I first hooked it up to the drift state machine I noticed
+                  the robot was essentially doing bang-bang control: it would pin the wheels at the minimum turn PWM all the way through the turn, blow
+                  past the setpoint, and then pin them in the opposite direction. The reason was a single block at the bottom of <code>yaw_service()</code>:
+                  whenever the PID output dropped below my static-friction floor (185 / 200 PWM), the code would clamp it back up to that floor. So even
+                  when the proportional term was telling me to cruise in at PWM 30, the floor was kicking it up to 185. That is not PID; that is open-loop
+                  driving with a stop band.
+                </p>
+                <p>
+                  I fixed this with a three-zone control law inside <code>yaw_service()</code>:
+                </p>
+
+<pre><code>if (fabs(err) &lt;= YAW_STOP_BAND_DEG) {
+    pwm = 0;                                          // settled
+} else if (fabs(err) &gt; 30.0f) {
+    // FAR: enforce the static-friction floor so we actually start spinning
+    if (err &gt; 0 && pwm &gt; 0 && pwm &lt; MIN_TURN_PWM_POS) pwm = MIN_TURN_PWM_POS;
+    if (err &lt; 0 && pwm &lt; 0 && pwm &gt; -MIN_TURN_PWM_NEG) pwm = -MIN_TURN_PWM_NEG;
+} else {
+    // NEAR: cap the maximum so we don't fly past, with a small floor so wheels still spin
+    const int APPROACH_CAP = 130;
+    if (pwm &gt;  APPROACH_CAP) pwm =  APPROACH_CAP;
+    if (pwm &lt; -APPROACH_CAP) pwm = -APPROACH_CAP;
+    const int APPROACH_MIN_POS = 100;
+    const int APPROACH_MIN_NEG = 110;
+    if (err &gt; 0 && pwm &gt; 0 && pwm &lt; APPROACH_MIN_POS) pwm = APPROACH_MIN_POS;
+    if (err &lt; 0 && pwm &lt; 0 && pwm &gt; -APPROACH_MIN_NEG) pwm = -APPROACH_MIN_NEG;
+}
+</code></pre>
+
+                <p>
+                  I also dropped <code>YAW_MAX_PWM</code> from 255 to 150. Slowing the maximum turn rate gave the IMU integration enough samples to
+                  catch the zero crossing instead of slewing past it. Final yaw gains for the run shown were
+                  <strong>K<sub>p</sub> = 3.3, K<sub>i</sub> = 0.08, K<sub>d</sub> = 0.20</strong>. With the three-zone law in place, the gyro plot
+                  in the close-up below shows a clean overshoot to about 138&deg; followed by a smooth pull-back to the setpoint &mdash; not the
+                  ringing I was getting before.
+                </p>
+
+
+                <!-- ===================== -->
+                <!-- Tunable parameters -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Final Tuned Parameters</h3>
+                <ul>
+                  <li><strong>Approach PWM:</strong> 255 (full speed, open loop)</li>
+                  <li><strong>Threshold for trigger:</strong> 1300 mm (tuned up from 914 mm to absorb ToF latency + braking distance)</li>
+                  <li><strong>Motor calibration factor:</strong> 0.75 on the right motor (settable from BLE via <code>SET_MOTOR_CAL</code>)</li>
+                  <li><strong>Yaw gains:</strong> K<sub>p</sub> = 3.3, K<sub>i</sub> = 0.08, K<sub>d</sub> = 0.20</li>
+                  <li><strong>Yaw setpoint (code):</strong> 180&deg; </li>
+                  <li><strong>Turn settle band:</strong> 5&deg; held for 300 ms before exit</li>
+                  <li><strong>Return PWM:</strong> 255 for 2 seconds</li>
+                </ul>
+
+                <!-- ===================== -->
+                <!-- Loop rate -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Drift Loop Rate</h3>
+                <p>
+                  Even though all three services (ToF, IMU, yaw, drift, BLE) run on the same loop, the drift logger still managed a comfortable rate.
+                  From the dumped data, the mean <code>dt</code> between drift log rows was <strong>0.0202 s</strong>, for a logging rate of about
+                  <strong>49.6 Hz</strong>. That is plenty for a maneuver this short, and it is being limited by the ToF sensor's timing budget rather
+                  than by the controller itself.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab8/lab8_drift_loop_rate.png" alt="Drift log rate ~49.6 Hz">
+                  </div>
+                </div>
+
+                <!-- ===================== -->
+                <!-- Results -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Results</h3>
+
+                <p>
+                  The figure below shows the full stunt. The shaded bands are the three phases (blue = APPROACH, red = TURNING, green = RETURN),
+                  and the bottom panel shows the state machine index changing in lockstep. A few things worth pointing out:
+                </p>
+                <ul>
+                  <li>
+                    <strong>The first ~1.2 s is the ToF settle window.</strong> The raw front ToF reads 0 mm until the sensor finishes booting,
+                    then it jumps up to ~2200 mm. The threshold check is intentionally inhibited during this window so the turn doesn't fire on
+                    a garbage reading.
+                  </li>
+                  <li>
+                    <strong>Approach ends at ~2.0 s</strong> when the estimated distance crosses 1300 mm. The motor command goes from +200 to a
+                    hard reverse around &minus;200 PWM &mdash; that is the active brake from <code>motors_stop()</code> immediately followed by the
+                    yaw PID driving one wheel backward.
+                  </li>
+                  <li>
+                    <strong>The turn finishes at ~3.4 s.</strong> Yaw overshoots to ~138&deg;, then the three-zone control law pulls it back into the
+                    5&deg; settle band around the (effective) setpoint, and the state machine transitions to RETURN.
+                  </li>
+                  <li>
+                    <strong>Return phase</strong> drives both motors at full forward PWM. The ToF reading rises again because the sensor is now pointed
+                    at the wall the robot is leaving, but it doesn't matter &mdash; the RETURN phase is purely time-based.
+                  </li>
+                </ul>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab8/lab8_drift_stunt.png" alt="Lab 8 Drift Stunt &mdash; full run">
+                  </div>
+                </div>
+
+                <p>
+                  Phase durations from this run: APPROACH 2.001 s, TURNING 1.294 s, RETURN 1.984 s, for a total of <strong>5.41 s</strong>.
+                </p>
+
+                <h5 class="mt-4"><strong>Close-up of the approach &rarr; turn transition</strong></h5>
+                <p>
+                  The plot below zooms in on the most interesting 2 seconds of the run. The vertical red dotted line marks the moment the trigger
+                  fires (<em>t</em> = 2.030 s). You can see the estimated distance crossing 1300 mm right at that line, the yaw curve immediately
+                  starting to slew from its resting value, and the motor PWM dropping from +200 to a sustained &minus;200 as the yaw PID drives the
+                  wheels in opposite directions. The whole turn from start to settled is 1.294 s.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab8/lab8_drift_turn_closeup.png" alt="Approach to Turn close-up">
+                  </div>
+                </div>
+
+                <p>
+                  One detail worth noting: in the distance panel of the close-up, the estimated curve briefly jumps back up to ~1900 mm during the
+                  turn. That isn't the robot moving backward &mdash; the front ToF starts looking off into open space mid-turn, so the reading temporarily
+                  reflects whatever happens to be in front of the sensor as the chassis rotates. The state machine doesn't care because the only thing
+                  it is watching during the TURNING phase is the gyro yaw error.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Videos -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Videos</h3>
+                <p>
+                  Three successful runs of the drift stunt are shown below.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+<iframe width="560" height="315" src="https://www.youtube.com/embed/m25k1LmvC-g?si=TdRjyL4xw9Beb3Gx" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>                  </div>
+                  <div class="col-md-6 mb-3">
+<iframe width="560" height="315" src="https://www.youtube.com/embed/k2YZC7RjhTw?si=4FwDViR3lduG1faT" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+<iframe width="560" height="315" src="https://www.youtube.com/embed/jBHmDbW8klw?si=_x53zC3zQpwjAJtF" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>                  </div>
+                </div>
+
+                <!-- ===================== -->
+                <!-- Discussion -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Discussion</h3>
+                <p>
+                  The most important lesson from this lab was that fast stunts expose every weakness in your sensor pipeline. My Lab 5 PID worked
+                  fine for parking 1 ft from a wall because the robot was moving slowly enough that 50 ms of ToF latency was invisible. As soon as
+                  I cranked the speed up to PWM 255, that same 50 ms became enough motion to crash the robot before the controller could react. The
+                  fix was not faster sensors &mdash; it was acknowledging the latency and triggering early.
+                </p>
+                <p>
+                  The yaw PID rebuild was the other big lesson. I had been calling my Lab 6 controller a &ldquo;PID&rdquo; for weeks, but the
+                  static-friction floor I had bolted onto the bottom of <code>yaw_service()</code> was actually overriding the proportional term whenever
+                  it mattered. Splitting the control law into a far / near / stop region let the proportional term actually do its job near the setpoint
+                  without losing the ability to overcome friction far from it. The improvement on the gyro plot is dramatic.
+                </p>
+
+              </div>
+
+              <button class="btn btn-primary mt-4" href="#" data-dismiss="modal">
+                <i class="fas fa-times fa-fw"></i>Close Window
+              </button>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
         <section class="page-section bg-primary text-white mb-0" id="about">
             <div class="container">
                 <!-- About Section Heading-->
