@@ -2520,12 +2520,11 @@ case DRIFT_START:
                 <hr class="my-4">
                 <h3 class="text-secondary">Fixing the Yaw PID for a Real Turn</h3>
                 <p>
-                  The yaw PID I had from Lab 6 was never really tuned for a fast 180&deg;. When I first hooked it up to the drift state machine I noticed
+                  I had a few problems with the Yaw PID at first. When I first hooked it up to the drift state machine I noticed
                   the robot was essentially doing bang-bang control: it would pin the wheels at the minimum turn PWM all the way through the turn, blow
                   past the setpoint, and then pin them in the opposite direction. The reason was a single block at the bottom of <code>yaw_service()</code>:
                   whenever the PID output dropped below my static-friction floor (185 / 200 PWM), the code would clamp it back up to that floor. So even
-                  when the proportional term was telling me to cruise in at PWM 30, the floor was kicking it up to 185. That is not PID; that is open-loop
-                  driving with a stop band.
+                  when the proportional term was telling me to cruise in at PWM 30, the floor was kicking it up to 185. It was to overcome static friction, but I realized it isn't the core essence of what we want from a PID. I did this at first because I wanted it to turn fast, but quickly realized I didn't need it.
                 </p>
                 <p>
                   I fixed this with a three-zone control law inside <code>yaw_service()</code>:
@@ -2551,7 +2550,7 @@ case DRIFT_START:
 
                 <p>
                   I also dropped <code>YAW_MAX_PWM</code> from 255 to 150. Slowing the maximum turn rate gave the IMU integration enough samples to
-                  catch the zero crossing instead of slewing past it. Final yaw gains for the run shown were
+                  catch the zero crossing instead of slewing past it. It was still more than fast enough as can be seen in my videos below Final yaw gains for the run shown were
                   <strong>K<sub>p</sub> = 3.3, K<sub>i</sub> = 0.08, K<sub>d</sub> = 0.20</strong>. With the three-zone law in place, the gyro plot
                   in the close-up below shows a clean overshoot to about 138&deg; followed by a smooth pull-back to the setpoint &mdash; not the
                   ringing I was getting before.
@@ -2598,7 +2597,7 @@ case DRIFT_START:
                 <h3 class="text-secondary">Results</h3>
 
                 <p>
-                  The figure below shows the full stunt. The shaded bands are the three phases (blue = APPROACH, red = TURNING, green = RETURN),
+                  The figure below shows the full stunt for the first run. The shaded bands are the three phases (blue = APPROACH, red = TURNING, green = RETURN),
                   and the bottom panel shows the state machine index changing in lockstep. A few things worth pointing out:
                 </p>
                 <ul>
@@ -2685,10 +2684,8 @@ case DRIFT_START:
                   fix was not faster sensors &mdash; it was acknowledging the latency and triggering early.
                 </p>
                 <p>
-                  The yaw PID rebuild was the other big lesson. I had been calling my Lab 6 controller a &ldquo;PID&rdquo; for weeks, but the
-                  static-friction floor I had bolted onto the bottom of <code>yaw_service()</code> was actually overriding the proportional term whenever
-                  it mattered. Splitting the control law into a far / near / stop region let the proportional term actually do its job near the setpoint
-                  without losing the ability to overcome friction far from it. The improvement on the gyro plot is dramatic.
+                  The yaw PID rebuild was the other big lesson. Splitting the control law into a far / near / stop region let the proportional term actually do its job near the setpoint
+                  without losing the ability to overcome friction far from it. The improvement on the gyro plot is dramatic. I didn't need to go hard and overcompensate, which is what I did previously.
                 </p>
 
               </div>
