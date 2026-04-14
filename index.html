@@ -124,6 +124,13 @@
                             </div><img class="img-fluid" src="assets/img/lab9/lab9_final_map.png" alt="Lab 9: Mapping"/>
                         </div>
                     </div>
+                    <div class="col-md-6 col-lg-4 mb-5">
+                        <div class="portfolio-item mx-auto" data-toggle="modal" data-target="#portfolioModal9">
+                            <div class="portfolio-item-caption d-flex align-items-center justify-content-center h-100 w-100">
+                                <div class="portfolio-item-caption-content text-center text-white"><i class="fas fa-plus fa-3x"></i></div>
+                            </div><img class="img-fluid" src="assets/img/lab10/lab10_plotter.png" alt="Lab 10: Grid Localization"/>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -2965,6 +2972,129 @@ y_room = y0 + (r + d_sensor) * sin(&theta;)
     </div>
   </div>
 </div>
+
+ <!-- Portfolio Modal (Lab 10) -->
+<div class="portfolio-modal modal fade" id="portfolioModal9" tabindex="-1" role="dialog" aria-labelledby="#portfolioModal9Label" aria-hidden="true">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true"><i class="fas fa-times"></i></span>
+      </button>
+
+      <div class="modal-body text-center">
+        <div class="container">
+          <div class="row justify-content-center">
+            <div class="col-lg-10">
+
+              <h2 class="portfolio-modal-title text-secondary mb-0">Lab 10: Grid Localization with a Bayes Filter</h2>
+
+              <div class="divider-custom">
+                <div class="divider-custom-line"></div>
+                <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+                <div class="divider-custom-line"></div>
+              </div>
+
+              <img class="img-fluid rounded mb-4" src="assets/img/lab10/lab10_plotter.png" alt="Lab 10 Overview &mdash; Belief vs Ground Truth vs Odometry"/>
+
+              <div class="text-left">
+
+                <!-- Overview -->
+                <h3 class="text-secondary">Overview</h3>
+                <p>
+                  In this lab, I implemented grid localization on the virtual robot using a Bayes filter. The continuous state space is discretized into a
+                  <strong>12 &times; 9 &times; 18 grid</strong> (1944 cells) over <em>x</em>, <em>y</em>, and &theta;, and the belief is updated every time
+                  step with a <strong>prediction</strong> step that folds in odometry through an odometry motion model and an <strong>update</strong> step
+                  that folds in the 18-beam ToF observation through a Gaussian sensor model.
+                </p>
+
+                <!-- Prediction Step -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Prediction Step</h3>
+                <p>
+                  The prediction step extracts the actual control <code>(&delta;rot1, &delta;trans, &delta;rot2)</code> from consecutive odometry readings,
+                  then iterates over every (previous state, current state) pair and scores each transition against a Gaussian motion model. To keep the
+                  triple loop tractable, I skip any previous state with belief below 10<sup>&minus;4</sup> and renormalize at the end. Angles are normalized
+                  to [&minus;180, 180)&deg; before they touch the Gaussian &mdash; without this, a 350&deg; vs &minus;10&deg; comparison looks
+                  catastrophically unlikely even though they represent the same heading.
+                </p>
+
+<pre><code>for x0, y0, a0 in previous_cells:
+    if loc.bel[x0, y0, a0] &lt; 1e-4: continue
+    for x1, y1, a1 in current_cells:
+        p_trans = odom_motion_model(cur_pose, prev_pose, u_actual)
+        loc.bel_bar[x1, y1, a1] += p_trans * loc.bel[x0, y0, a0]
+</code></pre>
+
+                <!-- Update Step -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Update Step</h3>
+                <p>
+                  The update step is fully vectorized across all 1944 cells. <code>mapper.obs_views</code> has shape <code>(12, 9, 18, 18)</code>, and the
+                  measurement is broadcast over the last axis to produce a per-beam likelihood cube. Taking a product over the 18 beams gives a single
+                  likelihood per cell, which is then multiplied into <code>bel_bar</code> and normalized. Avoiding a Python loop here dropped the update
+                  step from seconds to tens of milliseconds.
+                </p>
+
+<pre><code>per_beam = loc.gaussian(z, mapper.obs_views, loc.sensor_sigma)
+loc.bel = loc.bel_bar * np.prod(per_beam, axis=3)
+loc.bel /= np.sum(loc.bel)
+</code></pre>
+
+                <!-- Results -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Results</h3>
+                <p>
+                  The plotter screenshot at the top shows <span style="color:#2ecc71"><strong>ground truth (green)</strong></span>,
+                  <span style="color:#3498db"><strong>belief (blue)</strong></span>, and <span style="color:#e74c3c"><strong>odometry (red)</strong></span>
+                  over the full 16-step trajectory. The belief tracks ground truth tightly around the obstacle loop while odometry drifts off the map
+                  entirely &mdash; a clean demonstration of why probabilistic localization matters.
+                </p>
+                <p>
+                  Across all 16 steps, the update-step belief index matched the GT index exactly on 8 steps and was within one cell on every other step
+                  (position error &le; 0.305 m, typically much less). Confidences are extremely high after the update (often 1.0), which means the sensor
+                  model discriminates well between cells. The prediction step alone is noticeably worse &mdash; errors up to 1.05 m, and the bel_bar
+                  probability at the true cell occasionally drops to 10<sup>&minus;16</sup> or smaller &mdash; but the sensor update consistently rescues
+                  it. This is exactly the pattern you want: a noisy prior corrected by an informative measurement.
+                </p>
+
+                <p>
+                  One quirk worth flagging: the printed <code>POS ERROR</code> for yaw grows unboundedly (349&deg; &rarr; 706&deg; &rarr; &hellip; &rarr;
+                  6116&deg;) because <code>print_update_stats</code> subtracts the reported GT &theta; from belief &theta; without wrapping, and GT &theta;
+                  is itself an unwrapped accumulated angle. Normalizing both into [&minus;180, 180)&deg; gives a small per-step heading error consistent
+                  with the 20&deg; grid resolution.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+<iframe width="560" height="315" src="https://www.youtube.com/embed/fh4L4iAZ_qA?si=pypI9M-ykugafe5f" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>                  </div>
+                </div>
+
+                <!-- Discussion -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Discussion</h3>
+                <p>
+                  The filter works best when the robot is near distinctive geometry &mdash; the obstacle corner, the notch, tight walls &mdash; where the
+                  18-beam signature uniquely identifies a cell. It is weakest in open symmetric areas and on rotation-dominated steps, where many cells
+                  produce nearly identical measurements and the motion model contributes little positional information. The practical takeaway is that
+                  odometry is almost useless on its own (the red trail drifts several meters off the true path), but fused with even a noisy ToF
+                  observation it becomes a reliable estimator. The vectorized update was also essential: without it, a 1944-cell Python loop inside a
+                  16-step trajectory would have made debugging impossibly slow.
+                </p>
+
+              </div>
+
+              <button class="btn btn-primary mt-4" href="#" data-dismiss="modal">
+                <i class="fas fa-times fa-fw"></i>Close Window
+              </button>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>       
 
 
 
