@@ -117,6 +117,13 @@
                             </div><img class="img-fluid" src="assets/img/lab8/lab8_drift_stunt.png" alt="Lab 8: Stunts"/>
                         </div>
                     </div>
+                    <div class="col-md-6 col-lg-4 mb-5">
+                        <div class="portfolio-item mx-auto" data-toggle="modal" data-target="#portfolioModal8">
+                            <div class="portfolio-item-caption d-flex align-items-center justify-content-center h-100 w-100">
+                                <div class="portfolio-item-caption-content text-center text-white"><i class="fas fa-plus fa-3x"></i></div>
+                            </div><img class="img-fluid" src="assets/img/lab9/lab9_final_map.png" alt="Lab 9: Mapping"/>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -2702,6 +2709,263 @@ case DRIFT_START:
     </div>
   </div>
 </div>
+
+<!-- Portfolio Modal (Lab 9) -->
+<div class="portfolio-modal modal fade" id="portfolioModal8" tabindex="-1" role="dialog" aria-labelledby="#portfolioModal8Label" aria-hidden="true">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true"><i class="fas fa-times"></i></span>
+      </button>
+
+      <div class="modal-body text-center">
+        <div class="container">
+          <div class="row justify-content-center">
+            <div class="col-lg-10">
+
+              <!-- Title -->
+              <h2 class="portfolio-modal-title text-secondary mb-0">Lab 9: Mapping</h2>
+
+              <!-- Divider -->
+              <div class="divider-custom">
+                <div class="divider-custom-line"></div>
+                <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+                <div class="divider-custom-line"></div>
+              </div>
+
+              <img class="img-fluid rounded mb-4" src="assets/img/lab9/lab9_final_map.png" alt="Lab 9 Overview &mdash; Final Map with Fitted Walls"/>
+
+              <div class="text-left">
+
+                <!-- ===================== -->
+                <!-- Overview -->
+                <!-- ===================== -->
+                <h3 class="text-secondary">Overview</h3>
+                <p>
+                  In this lab, I built a 2D map of a static room by placing the robot at five known positions, spinning it in place at each, and logging
+                  ToF distance versus IMU-integrated yaw. The scans were transformed into a common room frame using homogeneous transformation matrices
+                  and plotted together so I could manually fit straight line segments to the walls and a freestanding obstacle.
+                </p>
+                <p>
+                  I used <strong>orientation (PID) control</strong> for the turns: 16 commanded increments of 22.5&deg; per scan, with three ToF readings
+                  averaged at each stop.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Control Strategy -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Control Strategy</h3>
+                <p>
+                  I reused my Lab 6 yaw PID (<code>K<sub>p</sub> = 3.3, K<sub>i</sub> = 0.08, K<sub>d</sub> = 0.2</code>) and wrapped it in a new
+                  non-blocking <code>map_scan_service()</code> that steps through <strong>TURNING &rarr; SETTLING &rarr; SAMPLING</strong> sixteen times per
+                  360&deg; scan. Python fires one <code>MAP_SCAN_START</code> BLE command and waits ~60 seconds for completion.
+                </p>
+                <p>
+                  A step settles only when the yaw error is within &plusmn;4&deg; <em>and</em> the gyro rate is below 10 &deg;/s, held for 250 ms. The
+                  gyro-rate check is essential: without it, the robot would briefly swing through the angle band at speed and trigger a false settle.
+                  After settling, SETTLING waits 800 ms for the ToF to stabilize, then SAMPLING averages three fresh readings.
+                </p>
+
+<pre><code>if (err &lt;= map_settle_band_deg &amp;&amp; gz_abs &lt;= 10.0f) {
+    map_settle_good_ms += dt_ms;
+} else {
+    map_settle_good_ms = 0;
+}
+</code></pre>
+
+                <p>
+                  I also raised the yaw PID's approach-region PWM floor from 100/110 to 120/130. Without that, small 22.5&deg; turns stalled on static
+                  friction, registered zero gyro rate, and the settle timer fired on a motionless robot &mdash; every step ending ~25&deg; short.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Turn Accuracy -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Turn Accuracy (Sanity Scans)</h3>
+                <p>
+                  Below are the polar plots from each of the five scan locations. Each row of printed statistics shows the difference between the commanded
+                  and IMU-measured yaw across the 16 turns. Because the map transform uses <em>measured</em> yaw rather than commanded yaw, even the scans
+                  with larger turn errors still produce geometrically correct points &mdash; the errors just mean the angular coverage is slightly uneven.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab9/cell7_-3_-2.png" alt="Sanity scan at (-3, -2) ft">
+                    <p class="mt-2 mb-0"><strong>(&minus;3, &minus;2) ft:</strong> mean &minus;19.0&deg;, std 9.1&deg;, max abs 30.1&deg;</p>
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab9/cell7_0_3.png" alt="Sanity scan at (0, 3) ft">
+                    <p class="mt-2 mb-0"><strong>(0, 3) ft:</strong> mean &minus;20.5&deg;, std 9.9&deg;, max abs 36.4&deg;</p>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab9/cell7_5_3.png" alt="Sanity scan at (5, 3) ft">
+                    <p class="mt-2 mb-0"><strong>(5, 3) ft:</strong> mean &minus;7.5&deg;, std 8.8&deg;, max abs 30.0&deg;</p>
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab9/cell7_5_-3.png" alt="Sanity scan at (5, -3) ft">
+                    <p class="mt-2 mb-0"><strong>(5, &minus;3) ft:</strong> mean &minus;18.2&deg;, std 9.6&deg;, max abs 29.9&deg;</p>
+                  </div>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab9/cell7_0_0.png" alt="Sanity scan at (0, 0) ft">
+                    <p class="mt-2 mb-0"><strong>(0, 0) ft (extra):</strong> mean &minus;5.0&deg;, std 7.3&deg;, max abs 25.3&deg;</p>
+                  </div>
+                </div>
+
+                <p>
+                  Turn error is dominated by a <em>bias</em> (negative mean) rather than random jitter. Settle fires slightly before the robot reaches
+                  the commanded setpoint, so each step ends a few degrees short, and those shortfalls accumulate. The later scans (0,0) and (5,3), taken
+                  after I tightened the PWM minimums, show a much smaller mean error.
+                </p>
+
+                <p>
+                  <strong>Expected error in a 4&times;4 m empty square room:</strong> with a worst-case yaw error of ~20&deg;, a ToF point at a 2 m wall
+                  is misplaced by 2 m &middot; sin(20&deg;) &asymp; 0.68 m along the wall. For the mean bias of ~8&deg;, the average placement error is
+                  2 m &middot; sin(8&deg;) &asymp; 0.28 m. The radial distance stays correct because it comes directly from the ToF sensor.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Transformation Matrices -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Transformation Matrices</h3>
+
+                <p>
+                  Each ToF reading at distance <em>r</em> and measured yaw &theta; is a point in the <strong>sensor frame</strong>, then transformed into
+                  the <strong>room frame</strong> by two homogeneous transforms.
+                </p>
+
+                <p>
+                  <strong>Sensor to robot:</strong> my front ToF is on the front face of the chassis, pointing along the robot's +<em>x</em>, about
+                  <em>d<sub>sensor</sub></em> = 5 cm forward of the rotation center. A range <em>r</em> sits at <code>(r + d<sub>sensor</sub>, 0)</code> in the robot frame:
+                </p>
+
+<pre><code>T_sensor_to_robot = [[1, 0, d_sensor],
+                     [0, 1, 0       ],
+                     [0, 0, 1       ]]
+</code></pre>
+
+                <p>
+                  <strong>Robot to room:</strong> a rotation by &theta; plus translation by the marked position (<em>x<sub>0</sub></em>, <em>y<sub>0</sub></em>):
+                </p>
+
+<pre><code>T_robot_to_room = [[cos(&theta;), -sin(&theta;), x0],
+                   [sin(&theta;),  cos(&theta;), y0],
+                   [0,        0,       1 ]]
+</code></pre>
+
+                <p>
+                  Combined and applied to <code>[r, 0, 1]</code>, this simplifies to the closed form I use in Python:
+                </p>
+
+<pre><code>x_room = x0 + (r + d_sensor) * cos(&theta;)
+y_room = y0 + (r + d_sensor) * sin(&theta;)
+</code></pre>
+
+                <p>
+                  Marked positions ((&minus;3,&minus;2), (0,3), (5,3), (5,&minus;3) ft, plus a (0,0) scan) are converted to meters first.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Global Map -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Global Map</h3>
+                <p>
+                  All five scans in the room frame, with robot positions marked as open squares. The outer point cloud traces the room's walls, and a
+                  cluster in the middle-right marks a freestanding obstacle visible mostly from the blue and orange scans.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab9/lab9_global_map.png" alt="Lab 9 Global Map">
+                  </div>
+                </div>
+
+                <hr class="my-4">
+                <h3 class="text-secondary">Line-Based Map</h3>
+                <p>
+                  For use in the simulator (Lab 10+), I manually fit straight line segments to the dense regions of the scatter. The boundary includes a
+                  top-left notch and a bottom-center protrusion, plus a closed rectangle for the obstacle. Endpoints are saved as
+                  <code>(x_start, y_start)</code> and <code>(x_end, y_end)</code> lists and exported to <code>lab9_walls.npz</code>.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab9/lab9_final_map.png" alt="Lab 9 Final Map with Fitted Walls">
+                  </div>
+                </div>
+
+<pre><code>wall_segments = [
+    # Outer walls
+    (-0.55,  1.50,   2.00,  1.50),
+    ( 2.00,  1.50,   2.00, -1.50),
+    ( 2.00, -1.50,   0.50, -1.50),
+    ( 0.50, -1.50,   0.50, -0.65),
+    ( 0.50, -0.65,  -0.25, -0.65),
+    (-0.25, -0.65,  -0.25, -1.50),
+    (-0.25, -1.50,  -2.00, -1.50),
+    (-2.00, -1.50,  -2.00,  0.00),
+    (-2.00,  0.00,  -0.55,  0.00),
+    (-0.55,  0.00,  -0.55,  1.50),
+    # Freestanding obstacle (middle-right)
+    ( 0.65, -0.22,   1.55, -0.22),
+    ( 1.55, -0.22,   1.55,  0.62),
+    ( 1.55,  0.62,   0.65,  0.62),
+    ( 0.65,  0.62,   0.65, -0.22),
+]
+</code></pre>
+
+                <p>
+                  A few outliers sit outside the walls &mdash; mostly glancing ToF hits where the beam grazed a wall at a shallow angle. I left them
+                  in the scatter rather than deleting them, but did not extend walls to cover them.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Discussion -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Discussion</h3>
+                <p>
+                  Two things mattered most for producing a usable map: (1) making the turn controller actually reach its setpoint, and (2) using the
+                  <em>measured</em> yaw rather than the commanded yaw in the transform. My first iteration trusted commanded angles and settled too loosely,
+                  so scans only completed ~300&deg; of 360&deg; and the map came out warped. Switching to measured yaw and tightening settle to require both
+                  small error and low gyro rate fixed it.
+                </p>
+                <p>
+                  Multiple scan positions were crucial. The top-left notch and the freestanding obstacle were only visible from one or two locations
+                  &mdash; the others had line-of-sight blocked by the obstacle itself or by room geometry. Merging scans from several vantage points
+                  filled in gaps that any single scan would miss, which is exactly why localization and navigation later in the semester rely on maps
+                  built this way.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+<iframe width="560" height="315" src="https://www.youtube.com/embed/1Zds7r7sFO8?si=78XRzrX2llDtJw0g" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>                  </div>
+                </div>
+
+              </div>
+
+              <button class="btn btn-primary mt-4" href="#" data-dismiss="modal">
+                <i class="fas fa-times fa-fw"></i>Close Window
+              </button>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 
 
         <section class="page-section bg-primary text-white mb-0" id="about">
