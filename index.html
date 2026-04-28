@@ -131,6 +131,13 @@
                             </div><img class="img-fluid" src="assets/img/lab10/lab10_plotter.png" alt="Lab 10: Grid Localization"/>
                         </div>
                     </div>
+                     <div class="col-md-6 col-lg-4 mb-5">
+                        <div class="portfolio-item mx-auto" data-toggle="modal" data-target="#portfolioModal10">
+                            <div class="portfolio-item-caption d-flex align-items-center justify-content-center h-100 w-100">
+                                <div class="portfolio-item-caption-content text-center text-white"><i class="fas fa-plus fa-3x"></i></div>
+                            </div><img class="img-fluid" src="assets/img/lab11/lab11_-3_-2_0.png" alt="Lab 11: Localization (Real Robot)"/>
+                        </div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -3096,6 +3103,238 @@ loc.bel /= np.sum(loc.bel)
   </div>
 </div>       
 
+<div class="portfolio-modal modal fade" id="portfolioModal10" tabindex="-1" role="dialog" aria-labelledby="#portfolioModal10Label" aria-hidden="true">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true"><i class="fas fa-times"></i></span>
+      </button>
+
+      <div class="modal-body text-center">
+        <div class="container">
+          <div class="row justify-content-center">
+            <div class="col-lg-10">
+
+              <h2 class="portfolio-modal-title text-secondary mb-0">Lab 11: Localization on the Real Robot</h2>
+
+              <div class="divider-custom">
+                <div class="divider-custom-line"></div>
+                <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+                <div class="divider-custom-line"></div>
+              </div>
+
+              <img class="img-fluid rounded mb-4" src="assets/img/lab11/lab11_-3_-2_0.png" alt="Lab 11 Overview — Real Robot Localization"/>
+
+              <div class="text-left">
+
+                <!-- ===================== -->
+                <!-- Overview -->
+                <!-- ===================== -->
+                <h3 class="text-secondary">Overview</h3>
+                <p>
+                  In this lab, I performed grid localization on my physical robot using only the update step of the Bayes filter.
+                  The prediction step was omitted because the real robot's motion is too noisy to provide useful odometry information.
+                  Instead, I placed the robot at each of four marked positions, performed a full 360&deg; ToF scan with 18 readings at 20&deg;
+                  increments, and ran the Bayes filter update to estimate the robot's pose. The key challenge was bridging the gap between the
+                  clean simulation environment and the noisy, friction-limited real hardware.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Simulation Baseline -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Simulation Baseline</h3>
+                <p>
+                  I first verified the provided localization module in simulation using <code>lab11_sim.ipynb</code>. The screenshot below shows
+                  the full 16-step trajectory with ground truth (green), belief (blue), and odometry (red). The belief tracks ground truth closely
+                  while odometry drifts off the map, confirming the filter works correctly in the ideal case.
+                </p>
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab11/lab11_sim.png" alt="Simulation baseline — belief vs GT vs odometry">
+                  </div>
+                </div>
+
+                <!-- ===================== -->
+                <!-- Observation Loop -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Observation Loop Implementation</h3>
+                <p>
+                  The real robot's <code>perform_observation_loop()</code> sends a <code>MAP_SCAN_START</code> BLE command with 18 steps.
+                  On the Arduino, a non-blocking <code>map_scan_service()</code> state machine drives the motors at full PWM (255) in the
+                  correct direction based on gyro-integrated yaw error, coasts when within a 10&deg; settle band, waits for the ToF to
+                  stabilize, and logs the measured angle and distance at each step.
+                </p>
+                <p>
+                  An early attempt using PID-controlled turns failed because the robot required near-maximum PWM (~200+) to overcome static
+                  friction on the lab floor. With a PID cap of 150, every turn produced the same insufficient torque regardless of error size,
+                  resulting in dragging rather than clean rotation. I replaced the PID approach with open-loop bang-bang control: the motors
+                  pulse at PWM 255 based on gyro error direction and stop when the gyro indicates the target angle has been reached. This
+                  produced reliable turns with a mean angular error of approximately 5&deg; per step.
+                </p>
+                <p>
+                  Because the turns are imprecise, the Python code interpolates the 18 measured (angle, range) pairs onto the exact
+                  0&deg;, 20&deg;, &hellip;, 340&deg; grid expected by the Bayes filter using <code>np.interp</code> with wrap-around
+                  handling. The BLE notification handler uses <code>byte_array.decode('utf-8', errors='ignore')</code> instead of the
+                  default decoder because the Arduino's <code>EString.append(float)</code> occasionally emits non-UTF-8 bytes (0xE5) that
+                  would crash the callback and prevent <code>MAP_DONE</code> detection.
+                </p>
+                <p>
+                  I also switched the ToF sensor to long-range mode (<code>TOF_SET_MODE 2</code>) after discovering that the default
+                  short-range mode capped readings at approximately 1.3 m, while the map contains corridors up to 3.7 m long. Even in
+                  long mode, the ToF became unreliable beyond about 2 m, so I clamped both sensor readings and map expectations to 1.5 m
+                  to prevent long-range outliers from dominating the Bayes filter likelihood.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Results -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Localization Results</h3>
+
+                <!-- Pose 1 -->
+                <h5 class="mt-3"><strong>Pose 1: (&minus;3, &minus;2, 0&deg;) ft</strong></h5>
+                <p>
+                  <strong>Ground Truth:</strong> (&minus;0.914, &minus;0.610, 0&deg;) m &nbsp;|&nbsp;
+                  <strong>Belief:</strong> (&minus;0.914, &minus;0.610, 10&deg;) &nbsp;|&nbsp;
+                  <strong>XY Error: 0.000 m</strong> &nbsp;|&nbsp; Prob: 1.0000
+                </p>
+                <p>
+                  This pose localized perfectly. The robot is surrounded by close walls on three sides, which produces a distinctive
+                  scan signature that uniquely identifies this cell. All 18 beams matched the map within 0.2 m.
+                </p>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab11/lab11_-3_-2_0_results.png" alt="(-3,-2,0) results">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab11/lab11_-3_-2_0.png" alt="(-3,-2,0) plotter">
+                  </div>
+                </div>
+
+                <!-- Pose 2 -->
+                <h5 class="mt-3"><strong>Pose 2: (0, 3, 0&deg;) ft</strong></h5>
+                <p>
+                  <strong>Ground Truth:</strong> (0.000, 0.914, 0&deg;) m &nbsp;|&nbsp;
+                  <strong>Belief:</strong> (0.000, 0.914, &minus;10&deg;) &nbsp;|&nbsp;
+                  <strong>XY Error: 0.000 m</strong> &nbsp;|&nbsp; Prob: 0.6537
+                </p>
+                <p>
+                  Also localized exactly. This pose sits near the top wall with the obstacle visible to the right, creating an
+                  asymmetric scan pattern. The lower confidence (0.65 vs 1.0) reflects a few beams where the ToF underread at
+                  long range, but the correct cell still dominated.
+                </p>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab11/lab11_0_3_0_results.png" alt="(0,3,0) results">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab11/lab11_0_3_0.png" alt="(0,3,0) plotter">
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab11/lab11_0_3_0_comparison.png" alt="(0,3,0) comparison">
+                  </div>
+                </div>
+
+                <!-- Pose 3 -->
+                <h5 class="mt-3"><strong>Pose 3: (5, &minus;3, 0&deg;) ft</strong></h5>
+                <p>
+                  <strong>Ground Truth:</strong> (1.524, &minus;0.914, 0&deg;) m &nbsp;|&nbsp;
+                  <strong>Belief:</strong> (0.914, &minus;1.219, &minus;30&deg;) &nbsp;|&nbsp;
+                  <strong>XY Error: 0.682 m</strong> &nbsp;|&nbsp; Prob: 0.5456
+                </p>
+                <p>
+                  This pose had moderate error. The comparison analysis showed that beams 7 and 8 (pointing at 140&deg; and 160&deg;)
+                  expected 2.6 m and 3.25 m from the map, but the ToF only measured 0.9 m and 1.2 m. These long corridors exceed
+                  the sensor's reliable range, causing large per-beam mismatches that shifted the belief by about two grid cells.
+                  The range clamping (1.5 m max) improved results compared to the unclamped run.
+                </p>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab11/lab11_5_-3_0_results.png" alt="(5,-3,0) results">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab11/lab11_5_-3_0.png" alt="(5,-3,0) plotter">
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab11/lab11_5_-3_0_comparison.png" alt="(5,-3,0) comparison">
+                  </div>
+                </div>
+
+                <!-- Pose 4 -->
+                <h5 class="mt-3"><strong>Pose 4: (5, 3, 0&deg;) ft</strong></h5>
+                <p>
+                  <strong>Ground Truth:</strong> (1.524, 0.914, 0&deg;) m &nbsp;|&nbsp;
+                  <strong>Belief:</strong> (1.829, 0.000, &minus;70&deg;) &nbsp;|&nbsp;
+                  <strong>XY Error: 0.964 m</strong> &nbsp;|&nbsp; Prob: 0.4949
+                </p>
+                <p>
+                  The worst-performing pose. The comparison showed beams 8, 9, 10, and 13 all point down long corridors
+                  (expected 2.3&ndash;3.7 m) where the ToF returns unreliable readings. With four out of eighteen beams
+                  severely mismatched, the filter picked a neighboring cell with a similar short-range signature. The low
+                  confidence (0.49) also indicates the filter was uncertain between multiple candidate cells.
+                </p>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab11/lab11_5_3_0_results.png" alt="(5,3,0) results">
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab11/lab11_5_3_0.png" alt="(5,3,0) plotter">
+                  </div>
+                </div>
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab11/lab11_5_3_0_comparison.png" alt="(5,3,0) comparison">
+                  </div>
+                </div>
+
+                <!-- ===================== -->
+                <!-- Discussion -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Discussion</h3>
+
+                <p>
+                  The results show a clear pattern: poses surrounded by close walls on most sides localize well, while poses
+                  with long open corridors in the scan perform poorly. This is because the VL53L1X ToF sensor becomes unreliable
+                  beyond approximately 2 m, returning readings that are significantly shorter than the true distance. When the
+                  map expects 3+ meters and the sensor returns 1 meter, the Gaussian likelihood for the correct cell drops
+                  dramatically, causing the filter to prefer incorrect cells with coincidentally similar short-range profiles.
+                </p>
+                <p>
+                  Tuning <code>sensor_sigma</code> was critical. In simulation, a tight sigma (0.1) works because the virtual
+                  sensor has minimal noise. On the real robot, I needed sigma values of 0.3&ndash;1.0 to tolerate the systematic
+                  underreading at long range. The range clamping strategy (limiting both sensor data and map expectations to 1.5 m)
+                  was the most effective mitigation: it converts long-range beams from penalizing liabilities into neutral
+                  observations that neither help nor hurt.
+                </p>
+                <p>
+                  The biggest engineering challenge was the turning mechanism. My robot's motors require near-maximum PWM to overcome
+                  static friction on the lab floor, which made the PID controller from Lab 6 (designed for a different surface)
+                  completely ineffective. Switching to open-loop bang-bang with gyro feedback was pragmatic: the turns are not precise
+                  (5&ndash;10&deg; error per step), but the interpolation in Python compensates by mapping measurements onto the
+                  correct angular grid using measured rather than commanded angles.
+                </p>
+
+              </div>
+
+              <button class="btn btn-primary mt-4" href="#" data-dismiss="modal">
+                <i class="fas fa-times fa-fw"></i>Close Window
+              </button>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
 
 
         <section class="page-section bg-primary text-white mb-0" id="about">
