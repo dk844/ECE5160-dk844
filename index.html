@@ -3389,6 +3389,281 @@ cmdr.plot_gt(gt_pose_m[0], gt_pose_m[1])
   </div>
 </div>
 
+<div class="portfolio-modal modal fade" id="portfolioModal11" tabindex="-1" role="dialog" aria-labelledby="portfolioModal11Label" aria-hidden="true">
+  <div class="modal-dialog modal-xl" role="document">
+    <div class="modal-content">
+      <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+        <span aria-hidden="true"><i class="fas fa-times"></i></span>
+      </button>
+
+      <div class="modal-body text-center">
+        <div class="container">
+          <div class="row justify-content-center">
+            <div class="col-lg-10">
+
+              <h2 class="portfolio-modal-title text-secondary mb-0">Lab 12: Inverted Pendulum (Wheelie)</h2>
+
+              <div class="divider-custom">
+                <div class="divider-custom-line"></div>
+                <div class="divider-custom-icon"><i class="fas fa-star"></i></div>
+                <div class="divider-custom-line"></div>
+              </div>
+
+              <img class="img-fluid rounded mb-4" src="assets/img/lab12/lab12_wheelie.png" alt="Lab 12 Overview — Car balanced on front wheels"/>
+
+              <div class="text-left">
+
+                <!-- ===================== -->
+                <!-- Overview -->
+                <!-- ===================== -->
+                <h3 class="text-secondary">Overview</h3>
+                <p>
+                  In this lab, I built a closed-loop controller that balances the RC car on its front wheels (a wheelie). The car uses
+                  the ICM-20948 IMU to measure tilt angle via a complementary filter fusing accelerometer and gyroscope data, and a PID
+                  controller drives both motors to keep the car upright. The controller runs at approximately 1 kHz on the Artemis,
+                  with gains tunable over BLE so I could iterate without reflashing.
+                </p>
+                <p>
+                  My final configuration used <strong>Kp = 100, Ki = 5, Kd = 1</strong> with a complementary filter alpha of
+                  <strong>0.98</strong> and a motor calibration factor of <strong>0.9</strong>. The car was able to hold itself
+                  near the balance point for brief periods before falling, demonstrating active closed-loop correction. However, it did not autonomously run in a continuous manner. I could not get it to continue to hold its inverted pendulum state for more than a few seconds a time, mostly because of hardware issues where the left set of wheels had to overcome more static friction than the right set, which inevitably resulted in an imbalance. Sadly, I was not able to fix this even after changing calibration factors and eventually my motors even gave out, with only the motors wheezing at the end. As such, I had to end the lab on this note. While it was not ideal, I did at least gather enough data and can report on what exactly my design choices were and how the results were shown as a result of my design choices.
+                </p>
+
+                <!-- ===================== -->
+                <!-- IMU Orientation -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">IMU Orientation and Tilt Estimation</h3>
+                <p>
+                  The first step was determining how the IMU axes map to the tilt angle relevant for balancing. With the car balanced
+                  on its front wheels (wheelie position), the accelerometer reads approximately <code>ax ≈ 1000 mg</code> (X-axis
+                  pointing up) and <code>az ≈ 0 mg</code>. I therefore compute tilt as:
+                </p>
+
+<pre><code>tilt_deg = atan2(az, ax) * 57.2958
+// ~0° when balanced upright, positive/negative when tilting</code></pre>
+
+                <p>
+                  I chose to balance on the front wheels rather than the rear because the rear-wheel (flipped) orientation places the
+                  tilt near ±180°, where <code>atan2</code> has a discontinuity that causes the angle to wrap unpredictably.
+                  The front-wheel orientation keeps the tilt near 0°, which is well-behaved.
+                </p>
+                <p>
+                  To fuse the noisy accelerometer with the drift-prone gyroscope, I used a complementary filter at 1 kHz. The filter
+                  only applies the accelerometer correction when fresh IMU data arrives; on stale-data cycles, it performs gyro-only
+                  integration to avoid degrading the effective alpha:
+                </p>
+
+<pre><code>float gyro_rate = -imu_latest_gy;  // negated to match accel convention
+
+if (imu_latest_t_us != last_imu_t) {
+    // Fresh IMU — full complementary filter
+    last_imu_t = imu_latest_t_us;
+    float accel_tilt = atan2f(imu_latest_az, imu_latest_ax) * 57.2958f;
+    pend_tilt_deg = alpha * (pend_tilt_deg + gyro_rate * dt)
+                  + (1 - alpha) * accel_tilt;
+} else {
+    // Stale — gyro-only integration
+    pend_tilt_deg += gyro_rate * dt;
+}</code></pre>
+
+                <p>
+                  With <strong>α = 0.98</strong> at 1 kHz, the filter trusts the gyroscope for fast changes while the accelerometer
+                  slowly corrects drift. I found that without the fresh-data check, running the full filter on stale samples effectively
+                  destroyed the alpha value (e.g., 0.98 would degrade to ~0.59), making the estimate noisy and unusable.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Controller Design -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Controller Design</h3>
+                <p>
+                  The setpoint is calibrated automatically at startup by reading the current tilt when the user holds the car balanced.
+                  The PID controller then computes:
+                </p>
+
+<pre><code>err = setpoint - tilt
+P   = Kp * err
+I   = Ki * integral(err * dt)  // clamped for anti-windup
+D   = -Kd * gyro_rate          // gyro-based, no derivative kick
+u   = P + I + D
+pwm = clamp(u, -255, 255)</code></pre>
+
+                <p>
+                  <strong>D term from gyro rate:</strong> Using the raw gyro rate instead of differencing the error avoids derivative
+                  kick (a spike when the setpoint changes or the error jumps). The gyro provides a clean, instantaneous angular velocity
+                  measurement, which is exactly what the derivative term needs.
+                </p>
+                <p>
+                  <strong>Deadband:</strong> I enforce a minimum PWM of 60 whenever the controller wants to correct. Below this threshold,
+                  the motors buzz but the wheels don't actually roll on the ground, creating a dead zone that delays the response.
+                  A dead zone of 0.02° suppresses output when the error is negligible.
+                </p>
+
+                <!-- ===================== -->
+                <!-- Motor Handling -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Motor Handling</h3>
+                <p>
+                  The <code>motors_set_signed()</code> function clears all four H-bridge pins before setting the active pair, which
+                  prevents cross-conduction (both sides of the bridge conducting simultaneously, which can damage the driver or short
+                  the motor). The right motor is scaled by <code>motor_cal = 0.9</code> to compensate for a friction asymmetry between
+                  the left and right wheel sets.
+                </p>
+
+<pre><code>void motors_set_signed(int pwm_signed)
+{
+    // Always clear all pins first to avoid cross-conduction
+    analogWrite(AB2IN_RIGHT, 0);
+    analogWrite(AB1IN_RIGHT, 0);
+    analogWrite(AB1IN_LEFT,  0);
+    analogWrite(AB2IN_LEFT,  0);
+
+    if (pwm_signed == 0) return;
+
+    int p  = abs(pwm_signed);
+    int rp = (int)(motor_cal * (float)p);
+
+    if (pwm_signed > 0) {
+        analogWrite(AB2IN_RIGHT, rp);
+        analogWrite(AB1IN_LEFT,  p);
+    } else {
+        analogWrite(AB1IN_RIGHT, rp);
+        analogWrite(AB2IN_LEFT,  p);
+    }
+}</code></pre>
+
+                <p>
+                  I also found that because all four wheels spin during balancing, the rear wheels (in the air)
+                  create reaction torque on the chassis that destabilizes the system. This was an unavoidable consequence of the drivetrain design.
+                </p>
+
+
+                <!-- ===================== -->
+                <!-- Tuning -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Tuning Process</h3>
+                <p>
+                  I followed a systematic approach: start with P-only, add D to damp oscillations, and add I last for steady-state correction.
+                </p>
+                <p>
+                  <strong>Step 1: P-only in air (Kp = 100, Ki = 0, Kd = 0):</strong> I held the car in the air and tilted it to observe
+                  the motor response. The controller responded correctly (wheels spin in the right direction when tilted), but with growing
+                  oscillations — the tilt would overshoot from -5° past the setpoint to +10°, then back to -15°, with each swing larger
+                  than the last. This confirmed that Kp = 100 was in the right range but needed damping.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab12/lab12_p_only_oscillation.png" alt="P-only oscillation — growing swings">
+                    <p class="mt-2 mb-0"><strong>P-only (Kp=100):</strong> Growing oscillations. The controller saturates at ±255 PWM and each swing adds energy.</p>
+                  </div>
+                </div>
+
+                <p>
+                  <strong>Step 2: Add Kd (Kp = 100, Ki = 5, Kd = 1):</strong> The derivative term resists fast tipping by reducing PWM
+                  as the angular velocity decreases. With Kd = 1, the in-air test showed the controller holding the tilt within ±0.15° of
+                  the setpoint for the first ~0.45 seconds before a perturbation caused overshoot. The overshoot recovered and the car
+                  briefly re-stabilized, showing active corrections in both directions.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab12/lab12_pid_in_air.png" alt="PID in air — brief stabilization then perturbation">
+                    <p class="mt-2 mb-0"><strong>PID in air (Kp=100, Ki=5, Kd=1):</strong> Controller holds ±0.15° for ~0.1s, recovers from perturbation, then falls at ~0.3s.</p>
+                  </div>
+                </div>
+
+                <iframe width="560" height="315" src="https://www.youtube.com/embed/23BdgRdzgeM?si=kczJATjZ2t1Vj4i4" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+                <!-- ===================== -->
+                <!-- Results -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Results</h3>
+                <p>
+                  The plot below shows the best ground run with the final gains. The tilt stays within ±0.15° of the 0.34° setpoint for
+                  approximately 0.45 seconds, with the PWM making small corrections (mostly at the 60 PWM deadband minimum). Around
+                  t = 0.45 s, the tilt drifts past the setpoint and the controller reverses direction (negative PWM), briefly stabilizes
+                  at -0.1° error, and then overcorrects. The car ultimately fell after approximately 0.6 seconds of active balancing.
+                </p>
+
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <img class="img-fluid rounded" src="assets/img/lab12/lab12_best_run.png" alt="Best run — Kp=100, Ki=5, Kd=1">
+                  </div>
+                </div>
+
+                <p>
+                  Key metrics from the best run: mean tilt 0.24°, standard deviation 0.11°, maximum error 0.38°. The controller
+                  successfully tracked the setpoint and made bidirectional corrections. Positive PWM when the car tilted below the
+                  setpoint and negative PWM when it overshot above. This demonstrates genuine closed-loop balancing behavior rather than
+                  simply falling in one direction.
+                </p>
+
+                <p><strong>Video:</strong> A brief clip showing the car actively balancing for several seconds before falling.</p>
+
+                <iframe width="560" height="315" src="https://www.youtube.com/embed/YdNpGiJRHeI?si=X6Ke-GA3HFVLRvaf" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
+                <!-- ===================== -->
+                <!-- Discussion -->
+                <!-- ===================== -->
+                <hr class="my-4">
+                <h3 class="text-secondary">Discussion</h3>
+                <p>
+                  The inverted pendulum is fundamentally harder than the position and orientation controllers from Labs 5–6 because the
+                  system is inherently unstable — any delay or dead zone in the control loop allows the tilt to accelerate away from
+                  the setpoint exponentially. Several factors limited my system's performance:
+                </p>
+                <p>
+                  <strong>Motor stiction:</strong> The left wheel set had noticeably higher static friction than the right, requiring
+                  a motor calibration factor of 0.9 and a minimum PWM deadband of 60. Even with these, the wheels sometimes failed to
+                  start spinning when the controller commanded small corrections, effectively creating a delay in the response.
+                </p>
+                <p>
+                  <strong>Reaction torque:</strong> All four wheels are driven. When the car is balanced on the front wheels, the rear
+                  wheels spin in the air. Rapid PWM changes cause the spinning rear wheels to apply reaction torque to the chassis,
+                  fighting the correction. This is particularly problematic during direction reversals.
+                </p>
+                <p>
+                  <strong>Release perturbation:</strong> The act of letting go of the car introduces a tilt perturbation (typically 1–3°)
+                  that the controller must catch immediately. If the perturbation exceeds what the motors can overcome given ground
+                  friction and reaction torque, the car falls before the controller can act.
+                </p>
+                <p>
+                  Approaches I considered but did not implement include using a Kalman filter for tilt estimation (the complementary
+                  filter was already fast and accurate enough at 1 kHz) and starting from a driving position and braking into a wheelie
+                  (the initial perturbation would be more controlled). The reason for this was because I failed to flip the car already during my Lab 8 and I didn't have the confidence to be able to manage to stabilize the car after essentially flipping it into a wheelie position. The friction that my car had to overcome was far too much and as the semester went by, my hardware connections seemed to degrade, causing my BLE device to disconnect when it is hit particularly hard. 
+                </p>
+                <p>
+                  Despite these challenges, the data clearly shows the controller working. The tilt oscillates around the setpoint
+                  with decreasing amplitude when conditions are favorable, the PWM responds in the correct direction within milliseconds,
+                  and bidirectional corrections demonstrate true closed-loop regulation. With better hardware (less stiction, independent
+                  front/rear drive), this controller architecture would likely achieve sustained balance.
+                </p>
+                <p>
+                    While all the labs were difficult, they were particularly rewarding because I got to see a real life reflection of my work instead of mere simulations that usually exist in other classes. Thank you to Professor Helbling and all the TAs for all the hours of work, lectures, and labs! I could not have done as much as I was able to without their assistance.
+                </p>
+
+              </div>
+
+              <button class="btn btn-primary mt-4" href="#" data-dismiss="modal">
+                <i class="fas fa-times fa-fw"></i>Close Window
+              </button>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
 
         <section class="page-section bg-primary text-white mb-0" id="about">
             <div class="container">
